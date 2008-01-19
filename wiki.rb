@@ -13,13 +13,17 @@ class Page
   attr_reader :name
   attr_writer :body
   
-  def initialize(name, body)
+  def initialize(name, body="")
     @name = name
     @body = body
   end
   
   def self.load(name)
-    Page.new(name, open(filename(name)).read)
+    if File.exists?(filename(name))
+      Page.new(name, open(filename(name)).read)
+    else
+      nil
+    end
   end
   
   def self.filename(name); "content/#{name}.textile"; end
@@ -51,15 +55,10 @@ class WikiHandler < Mongrel::HttpHandler
       http_method = @request.params["REQUEST_METHOD"] || ""
       case http_method.upcase
       when "GET"
-        @response.start(200) do |head, out|
-          head["Content-Type"] = "text/html"
-          out.write get(*args)
-        end
+        get(*args)
       when "POST"
-        @response.start(303) do |head, out|
-          @input = hashify(io_to_string(@request.body))
-          head["Location"] = post(*args)
-        end
+        @input = hashify(io_to_string(@request.body))
+        post(*args)
       else
         raise ArgumentError("Only GET and POST are supported, not '#{http_method}'")
       end
@@ -106,8 +105,17 @@ class WikiHandler < Mongrel::HttpHandler
   def escape(s); Mongrel::HttpRequest.escape(s); end
   def unescape(s); Mongrel::HttpRequest.unescape(s); end
   
-  def display(name, context)
-    Erubis::Eruby.new(open("templates/#{name}.rhtml").read).evaluate(context)
+  def redirect(uri)
+    @response.start(303) do |head, out|
+      head["Location"] = uri
+    end
+  end
+  
+  def render(template, context)
+    @response.start(200) do |head, out|
+      head["Content-Type"] = "text/html"
+      out.write Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
+    end
   end
 end
 
@@ -142,21 +150,35 @@ class PageController < WikiHandler
     page = Page.load(name)
     case action
     when "view"
-      display "show_page", :page => page
+      if page
+        render 'show_page', :page => page
+      else
+        redirect edit_uri(name)
+      end
     when "edit"
-      display "edit_page", :page => page, :submit_uri => page_uri(page)
+      page ||= Page.new(name)
+      render 'edit_page', :page => page, :submit_uri => page_uri(page)
     end
   end
   
   def post(name, action=nil)
-    page = Page.load(name)
-    page.body = @input['content']
+    page = Page.new(name, @input['content'])
     page.save
-    page_uri(page)
+    redirect page_uri(page)
   end
-
-  def page_uri(page); "/page/#{escape(page.name)}"; end
-  def edit_uri(page); "#{page_uri(page)}/edit"; end
+  
+  def page_uri(input)
+    name = if input.is_a?(Page)
+        input.name
+      elsif input.is_a?(String)
+        input
+      else
+        raise ArgumentError("don't know how to make a uri out of a #{input.class}")
+      end
+    "/page/#{escape(name)}"
+  end
+  
+  def edit_uri(input); "#{page_uri(input)}/edit"; end
 end
 
 def start_mongrel
