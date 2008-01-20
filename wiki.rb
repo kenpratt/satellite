@@ -72,13 +72,13 @@ class PageController < RequestHandler
     case action
     when 'view'
       if page
-        render 'show_page', :title => page.name, :page => page
+        render 'show_page', :title => page.name, :page => page, :edit_uri => edit_uri(page.name)
       else
         redirect edit_uri(name)
       end
     when 'edit'
       page ||= Page.new(name)
-      render 'edit_page', :title => page.name, :page => page, :submit_uri => page_uri(page.name)
+      render 'edit_page', :title => "Editing #{page.name}", :page => page, :page_uri => page_uri(page.name)
     end
   end
   

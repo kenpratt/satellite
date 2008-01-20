@@ -4,14 +4,31 @@
 @import "lib/buttons.css";
 /* End import/hide */
 
-body {
-}
-#wrapper {
-}
-#content {
-}
-
 h1, h2, h3, h4, h5 {
   font-family: "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: bold;
+}
+
+#header {
+  background: #600 url('dot.png') repeat;
+}
+#header h1 {
+}
+#header h1 a {
+  display: block;
+  width: 140px;
+  height: 20px;
+  background: transparent url('logo.png') no-repeat 5px 5px;
+}
+#header h1 a span {
+  display: none;
+}
+
+#content-box {
+  padding: 1em;
+}
+
+#new-page #name {
+  font-size: 170%;
   font-weight: bold;
 }

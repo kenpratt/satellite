@@ -1,5 +1,6 @@
-<form action="/new" method="post">
+<form id="new-page" action="/new" method="post">
 	<input id="name" name="name" size="20" value="<%= @page.name %>" /><br />
 	<textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
 	<button type="submit">Save</button>
+	or <a href="/">Cancel</a>
 </form>

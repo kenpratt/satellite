@@ -16,12 +16,17 @@
 
 </head>
 <body>
-	<div id="wrapper">
+	<div id="wrapper-box">
 		<div id="header">
-			<h1><span>Wiki</span></h1>
+			<h1><a href="/"><span>Wiki</span></a></h1>
 		</div>
 	
-		<div id="content">
+		<div id="content-box">
+			<div id="menu">
+				<a href="/new">Add page</a> |
+				<a href="/list">All pages</a>
+			</div>
+			
 			<h2><%= @title %></h2>
 			<% if @error %><p class="error"><%= @error %></p><% end %>
 			<%= @inner %>
