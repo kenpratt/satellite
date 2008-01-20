@@ -8,12 +8,12 @@ class RequestHandler < Mongrel::HttpHandler
   def process(request, response)
     begin
       @request, @response = request, response
-      args = extract_args(@request.params["REQUEST_URI"])
-      http_method = @request.params["REQUEST_METHOD"] || ""
+      args = extract_args(@request.params['REQUEST_URI'])
+      http_method = @request.params['REQUEST_METHOD'] || ''
       case http_method.upcase
-      when "GET"
+      when 'GET'
         get(*args)
-      when "POST"
+      when 'POST'
         @input = hashify(io_to_string(@request.body))
         post(*args)
       else
@@ -21,11 +21,11 @@ class RequestHandler < Mongrel::HttpHandler
       end
     rescue Exception => e
       @response.start(500) do |head, out|
-        head["Content-Type"] = "text/html"
-        out.write "<pre>"
+        head['Content-Type'] = 'text/html'
+        out.write '<pre>'
         out.write "#{e.class}: #{e.message}\n"
         out.write e.backtrace.collect {|s| "        #{s}\n" }.join
-        out.write "</pre>"
+        out.write '</pre>'
       end
     end
   end
@@ -64,15 +64,20 @@ class RequestHandler < Mongrel::HttpHandler
   
   def redirect(uri)
     @response.start(303) do |head, out|
-      head["Location"] = uri
+      head['Location'] = uri
     end
   end
   
   def render(template, context)
     @response.start(200) do |head, out|
-      head["Content-Type"] = "text/html"
-      out.write Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
+      head['Content-Type'] = 'text/html'
+      inner = Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
+      out.write Erubis::Eruby.new(open("templates/structure.rhtml").read).evaluate({:content => inner})
     end
+  end
+  
+  def process_template(template, context)
+    Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
   end
 end
 
@@ -80,9 +85,9 @@ def save_file(input, destination)
   if input.is_a?(Tempfile)
     FileUtils.cp(input.path, destination)
   elsif input.is_a?(StringIO)
-    File.open(destination, "w") { |f| f << input.read }
+    File.open(destination, 'w') { |f| f << input.read }
   elsif input.is_a?(String)
-    File.open(destination, "w") { |f| f << input }
+    File.open(destination, 'w') { |f| f << input }
   else
     raise ArgumentError("don't know how to save a #{input.class}")
   end

@@ -1,0 +1,17 @@
+/* Import stylesheets and hide from IE/Mac \*/
+@import "lib/reset.css";
+@import "lib/typography.css";
+@import "lib/buttons.css";
+/* End import/hide */
+
+body {
+}
+#wrapper {
+}
+#content {
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: bold;
+}

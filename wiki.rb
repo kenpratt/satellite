@@ -3,8 +3,8 @@
 %w{ rubygems mongrel metaid redcloth open-uri erubis }.each {|gem| require gem }
 
 # TODO integtrate configuration into app definition so framework doesn't rely on these constants
-APPNAME = "Wiki"
-ADDR, PORT = "0.0.0.0", 3000
+APPNAME = 'Wiki'
+ADDR, PORT = '0.0.0.0', 3000
 
 require 'framework'
 
@@ -12,7 +12,7 @@ class Page
   attr_reader :name
   attr_writer :body
   
-  def initialize(name, body="")
+  def initialize(name, body='')
     @name = name
     @body = body
   end
@@ -58,16 +58,16 @@ class PageController < RequestHandler
     super "/page/(\\w+)", "/page/(\\w+)/(edit)"
   end
   
-  def get(name, action="view")
+  def get(name, action='view')
     page = Page.load(name)
     case action
-    when "view"
+    when 'view'
       if page
         render 'show_page', :page => page
       else
         redirect edit_uri(name)
       end
-    when "edit"
+    when 'edit'
       page ||= Page.new(name)
       render 'edit_page', :page => page, :submit_uri => page_uri(page)
     end
@@ -96,8 +96,9 @@ end
 # TODO moge mongrel into framework
 def start_mongrel
   h = Mongrel::HttpServer.new(ADDR, PORT)
-  h.register("/page", PageController.new) # TODO remove app logic from the framework code
-  h.register("/favicon.ico", Mongrel::Error404Handler.new(""))
+  h.register('/page', PageController.new) # TODO remove app logic from the framework code
+  h.register('/static', Mongrel::DirHandler.new('static/'))
+  h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
   puts "** #{APPNAME} is now running at http://#{ADDR}:#{PORT}/"
   h.run.join
 end
