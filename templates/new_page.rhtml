@@ -1,4 +1,5 @@
-<form action="<%= @submit_uri %>" method="post">
+<form action="/new" method="post">
+	<input id="name" name="name" size="20" value="<%= @page.name %>" /><br />
 	<textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
 	<button type="submit">Save</button>
 </form>

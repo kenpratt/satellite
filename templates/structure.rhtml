@@ -4,7 +4,7 @@
 <meta http-equiv="Content-type" content="text/html; charset=iso-8859-1" />
 <meta http-equiv="Content-Language" content="en-us" />
 
-<title>Wiki</title>
+<title><%= @title %> - Wiki</title>
 
 <link type="text/css" href="/static/screen.css" media="screen, projection" rel="stylesheet"/>
 <link type="text/css" href="/static/print.css" media="print" rel="stylesheet"/>
@@ -22,7 +22,9 @@
 		</div>
 	
 		<div id="content">
-			<%= @content %>
+			<h2><%= @title %></h2>
+			<% if @error %><p class="error"><%= @error %></p><% end %>
+			<%= @inner %>
 		</div>
 	</div>
 </body>

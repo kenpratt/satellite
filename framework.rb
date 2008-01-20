@@ -10,6 +10,8 @@ class RequestHandler < Mongrel::HttpHandler
       @request, @response = request, response
       args = extract_args(@request.params['REQUEST_URI'])
       http_method = @request.params['REQUEST_METHOD'] || ''
+      log "#{http_method} #{@request.params['REQUEST_URI']}"
+      
       case http_method.upcase
       when 'GET'
         get(*args)
@@ -20,6 +22,9 @@ class RequestHandler < Mongrel::HttpHandler
         raise ArgumentError("Only GET and POST are supported, not '#{http_method}'")
       end
     rescue Exception => e
+      log "Error occured:"
+      log "#{e.class}: #{e.message}"
+      log e.backtrace.collect {|s| "        #{s}\n" }.join
       @response.start(500) do |head, out|
         head['Content-Type'] = 'text/html'
         out.write '<pre>'
@@ -63,16 +68,19 @@ class RequestHandler < Mongrel::HttpHandler
   def unescape(s); Mongrel::HttpRequest.unescape(s); end
   
   def redirect(uri)
+    log "Redirecting to #{uri}"
     @response.start(303) do |head, out|
       head['Location'] = uri
     end
   end
   
-  def render(template, context)
+  def render(template, context={})
+    log "Rendering #{template}"
     @response.start(200) do |head, out|
       head['Content-Type'] = 'text/html'
-      inner = Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
-      out.write Erubis::Eruby.new(open("templates/structure.rhtml").read).evaluate({:content => inner})
+      inner = process_template(template, context)
+      context.store(:inner, inner)
+      out.write process_template('structure', context)
     end
   end
   
