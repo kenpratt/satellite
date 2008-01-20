@@ -1,5 +1,5 @@
-<form action="<%= @page_uri %>" method="post">
+<form action="<%= @uri.page(@page.name) %>" method="post">
 	<textarea id="content" name="content" rows="10" cols="10"><%= @page.body %></textarea><br />
 	<button type="submit">Save</button>
-	or <a href="<%= @page_uri %>">Cancel</a>
+	or <a href="<%= @uri.page(@page.name) %>">Cancel</a>
 </form>

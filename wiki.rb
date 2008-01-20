@@ -17,6 +17,10 @@ class Page
     @body = body
   end
   
+  def self.list
+    Dir[filename('*')].collect {|s| s.sub(/^content\/(\w+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
+  end
+  
   def self.load(name)
     if exists?(name)
       Page.new(name, open(filename(name)).read)
@@ -52,6 +56,23 @@ class Page
 end
 
 
+class WikiController < RequestHandler
+  alias :original_render :render
+  def render(template, title, params={})
+    original_render(template, params.merge!({ :title => title, :uri => Uri }))
+  end
+  
+  class Uri
+    class << self
+      def page(name) "/page/#{RequestHandler.escape(name)}" end
+      def edit_page(name) "/page/#{RequestHandler.escape(name)}/edit" end
+      def new_page() '/new' end
+      def list() '/list' end
+      def home() '/page/Home' end
+    end
+  end
+end
+
 # TODO it would be nice to have this be like camping, with something like < R "/page/(.+)"
 # instead of the inherit block. the necessary method might look like:
 #
@@ -62,7 +83,7 @@ end
 #   end
 # end
 #
-class PageController < RequestHandler
+class PageController < WikiController
   def initialize
     super "/page/(\\w+)", "/page/(\\w+)/(edit)"
   end
@@ -72,58 +93,58 @@ class PageController < RequestHandler
     case action
     when 'view'
       if page
-        render 'show_page', :title => page.name, :page => page, :edit_uri => edit_uri(page.name)
+        render 'show_page', page.name, :page => page
       else
-        redirect edit_uri(name)
+        redirect Uri.edit_page(page.name)
       end
     when 'edit'
       page ||= Page.new(name)
-      render 'edit_page', :title => "Editing #{page.name}", :page => page, :page_uri => page_uri(page.name)
+      render 'edit_page', "Editing #{page.name}", :page => page
     end
   end
   
   def post(name, action=nil)
     page = Page.new(name, @input['content'])
     page.save
-    redirect page_uri(page.name)
+    redirect Uri.page(page.name)
   end
-  
-  def page_uri(name); "/page/#{escape(name)}"; end
-  def edit_uri(name); "/page/#{escape(name)}/edit"; end
 end
 
-class NewPageController < RequestHandler
+class NewPageController < WikiController
   def initialize
     super '/new'
   end
   
   def get
-    render 'new_page', :title => 'Add page', :page => Page.new
+    render 'new_page', 'Add page', :page => Page.new
   end
   
   def post
     page = Page.new(@input['name'], @input['content'])
     unless Page.exists?(page.name)
       page.save
-      redirect page_uri(page.name)
+      redirect Uri.page(page.name)
     else
-      render 'new_page', :title => 'Add page', :page => page, :error => "A page named #{page.name} already exists"
+      render 'new_page', 'Add page', :page => page, :error => "A page named #{page.name} already exists"
     end
   end
+end
+
+class ListController < WikiController
+  def initialize
+    super '/list'
+  end
   
-  def page_uri(name); "/page/#{escape(name)}"; end
+  def get
+    render 'list_pages', 'All pages', :pages => Page.list
+  end
 end
 
-# TODO remove app logic below and move mongrel into framework
-def start_mongrel
-  h = Mongrel::HttpServer.new(ADDR, PORT)
-  h.register('/', Mongrel::RedirectHandler.new('/page/Home'))
-  h.register('/page', PageController.new)
-  h.register('/new', NewPageController.new)
-  h.register('/static', Mongrel::DirHandler.new('static/'))
-  h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-  puts "** #{APPNAME} is now running at http://#{ADDR}:#{PORT}/"
-  h.run.join
-end
+ROUTES = [ 
+  [ '/', '/page/Home' ],
+  [ '/page', PageController.new ],
+  [ '/new', NewPageController.new ],
+  [ '/list', ListController.new ]
+]
 
-start_mongrel
+Server.new(ADDR, PORT, ROUTES).start

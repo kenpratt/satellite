@@ -23,8 +23,9 @@
 	
 		<div id="content-box">
 			<div id="menu">
-				<a href="/new">Add page</a> |
-				<a href="/list">All pages</a>
+				<a href="<%= @uri.home %>">Home</a> |
+				<a href="<%= @uri.new_page %>">Add page</a> |
+				<a href="<%= @uri.list %>">All pages</a>
 			</div>
 			
 			<h2><%= @title %></h2>

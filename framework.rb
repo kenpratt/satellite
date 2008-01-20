@@ -48,7 +48,7 @@ class RequestHandler < Mongrel::HttpHandler
   end
   
   def hashify(str, hash={})
-    (str || '').split(/[&;] */n).each { |f| hash.store(*unescape(f).split('=', 2)) }
+    (str || '').split(/[&;] */n).each { |f| hash.store(*RequestHandler.unescape(f).split('=', 2)) }
     hash
   end
   
@@ -64,8 +64,8 @@ class RequestHandler < Mongrel::HttpHandler
     end
   end
   
-  def escape(s); Mongrel::HttpRequest.escape(s); end
-  def unescape(s); Mongrel::HttpRequest.unescape(s); end
+  def self.escape(s); Mongrel::HttpRequest.escape(s); end
+  def self.unescape(s); Mongrel::HttpRequest.unescape(s); end
   
   def redirect(uri)
     log "Redirecting to #{uri}"
@@ -103,4 +103,26 @@ end
 
 def log(s)
   puts s
+end
+
+class Server
+  def initialize(addr, port, routes)
+    @addr, @port, @routes = addr, port, routes
+  end
+  
+  def start
+    h = Mongrel::HttpServer.new(@addr, @port)
+    @routes.each do |path, action|
+      case action
+      when String
+        h.register(path, Mongrel::RedirectHandler.new(action))
+      else
+        h.register(path, action)
+      end
+    end
+    h.register('/static', Mongrel::DirHandler.new('static/'))
+    h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
+    puts "** app is now running at http://#{@addr}:#{@port}/"
+    h.run.join
+  end
 end
