@@ -19,7 +19,7 @@ class RequestHandler < Mongrel::HttpHandler
         @input = hashify(io_to_string(@request.body))
         post(*args)
       else
-        raise ArgumentError("Only GET and POST are supported, not '#{http_method}'")
+        raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
       end
     rescue Exception => e
       log "Error occured:"
@@ -41,7 +41,7 @@ class RequestHandler < Mongrel::HttpHandler
       log "  Attempting to match /^#{fmt}\\/?$/"
       if m = /^#{fmt}\/?$/.match(request_uri)
         log "    Found #{m.size - 1} arguments"
-        return m.to_a[1..-1]
+        return m.to_a[1..-1].collect {|a| RequestHandler.unescape(a) }
       end
     end
     []
@@ -60,7 +60,7 @@ class RequestHandler < Mongrel::HttpHandler
     elsif input.is_a?(String)
       input
     else
-      raise ArgumentError("don't know how to read a #{input.class}")
+      raise ArgumentError.new("don't know how to read a #{input.class}")
     end
   end
   
@@ -97,7 +97,7 @@ def save_file(input, destination)
   elsif input.is_a?(String)
     File.open(destination, 'w') { |f| f << input }
   else
-    raise ArgumentError("don't know how to save a #{input.class}")
+    raise ArgumentError.new("don't know how to save a #{input.class}")
   end
 end
 

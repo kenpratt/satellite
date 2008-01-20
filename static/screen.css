@@ -1,7 +1,7 @@
 /* Import stylesheets and hide from IE/Mac \*/
 @import "lib/reset.css";
 @import "lib/typography.css";
-@import "lib/buttons.css";
+/*@import "lib/buttons.css";*/
 /* End import/hide */
 
 h1, h2, h3, h4, h5 {
@@ -22,6 +22,11 @@ h1, h2, h3, h4, h5 {
 }
 #header h1 a span {
   display: none;
+}
+
+#menu {
+  padding: 0.25em 0.6em;
+  font-size: 90%;
 }
 
 #content-box {

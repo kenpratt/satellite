@@ -9,16 +9,19 @@ ADDR, PORT = '0.0.0.0', 3000
 require 'framework'
 
 class Page
+  VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
+  
   attr_reader :name
   attr_writer :body
   
   def initialize(name='', body='')
     @name = name
     @body = body
+    raise ArgumentError.new("name is invalid: #{name}") if name.any? && !valid_name?
   end
   
   def self.list
-    Dir[filename('*')].collect {|s| s.sub(/^content\/(\w+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
+    Dir[filename('*')].collect {|s| s.sub(/^content\/(.+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
   end
   
   def self.load(name)
@@ -53,10 +56,17 @@ class Page
   def save
     save_file(@body, filename)
   end
+  
+  def valid_name?
+    name =~ /^[#{VALID_NAME_CHARS}]+$/
+  end
 end
 
 
 class WikiController < RequestHandler
+  VALID_CHARS = '\w \+\%\-\.'
+  NAME = "([#{VALID_CHARS}]+)"
+  
   alias :original_render :render
   def render(template, title, params={})
     original_render(template, params.merge!({ :title => title, :uri => Uri }))
@@ -85,7 +95,7 @@ end
 #
 class PageController < WikiController
   def initialize
-    super "/page/(\\w+)", "/page/(\\w+)/(edit)"
+    super "/page/#{NAME}", "/page/#{NAME}/(edit)"
   end
   
   def get(name, action='view')
@@ -95,7 +105,7 @@ class PageController < WikiController
       if page
         render 'show_page', page.name, :page => page
       else
-        redirect Uri.edit_page(page.name)
+        redirect Uri.edit_page(name)
       end
     when 'edit'
       page ||= Page.new(name)
