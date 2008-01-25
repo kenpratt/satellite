@@ -16,7 +16,7 @@ h1, h2, h3, h4, h5 {
 }
 #header h1 a {
   display: block;
-  width: 140px;
+  width: 70px;
   height: 20px;
   background: transparent url('logo.png') no-repeat 5px 5px;
 }

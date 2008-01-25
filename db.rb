@@ -1,4 +1,7 @@
-%w{ config rubygems fileutils git }.each {|g| require g }
+# This is the "database", which entails a local git repository to store pages 
+# in as well as a master repository to pull changes from and push changes to.
+
+%w{ config rubygems fileutils git }.each {|l| require l }
 
 module Db
     

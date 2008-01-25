@@ -1,12 +1,11 @@
 #!/bin/env ruby
 
-%w{ rubygems mongrel metaid redcloth open-uri erubis }.each {|gem| require gem }
+# This is the main Satellite app. All business logic is contained here. 
+# - configuration is in config.rb
+# - controller and view framework is in framework.rb
+# - "database" aka Git interface is in db.rb
 
-# TODO integtrate configuration into app definition so framework doesn't rely on these constants
-APPNAME = 'Wiki'
-ADDR, PORT = '0.0.0.0', 3000
-
-require 'framework'
+%w{ config framework rubygems metaid redcloth open-uri erubis }.each {|l| require l }
 
 class Page
   VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
@@ -157,4 +156,4 @@ ROUTES = [
   [ '/list', ListController.new ]
 ]
 
-Server.new(ADDR, PORT, ROUTES).start
+Server.new(Conf::SERVER_IP, Conf::SERVER_PORT, ROUTES).start

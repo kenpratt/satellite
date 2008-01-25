@@ -1,4 +1,6 @@
-# This is the extracted framework supporting the wiki app
+# This is the framework for controllers and views extracted from Satellite
+
+%w{ config rubygems mongrel }.each {|l| require l }
 
 class RequestHandler < Mongrel::HttpHandler
   def initialize(*uri_formats)
@@ -122,7 +124,7 @@ class Server
     end
     h.register('/static', Mongrel::DirHandler.new('static/'))
     h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-    puts "** app is now running at http://#{@addr}:#{@port}/"
+    puts "** #{Conf::APPNAME} is now running at http://#{@addr}:#{@port}/"
     h.run.join
   end
 end
