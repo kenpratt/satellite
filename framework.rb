@@ -1,6 +1,6 @@
 # This is the framework for controllers and views extracted from Satellite
 
-%w{ config rubygems mongrel }.each {|l| require l }
+%w{ config rubygems fileutils mongrel }.each {|l| require l }
 
 class RequestHandler < Mongrel::HttpHandler
   def initialize(*uri_formats)
@@ -87,11 +87,20 @@ class RequestHandler < Mongrel::HttpHandler
   end
   
   def process_template(template, context)
-    Erubis::Eruby.new(open("templates/#{template}.rhtml").read).evaluate(context)
+    Erubis::Eruby.new(open(template_path(template)).read).evaluate(context)
+  end
+  
+  def template_path(template)
+    File.join(Conf::TEMPLATE_DIR, "#{template}.rhtml")
   end
 end
 
 def save_file(input, destination)
+  # create the destination directory if it doesn't already exist
+  dir = File.dirname(destination)
+  FileUtils.mkdir_p(dir) unless File.exists?(dir)
+
+  # copy the input to the destination file
   if input.is_a?(Tempfile)
     FileUtils.cp(input.path, destination)
   elsif input.is_a?(StringIO)
@@ -124,7 +133,7 @@ class Server
     end
     h.register('/static', Mongrel::DirHandler.new('static/'))
     h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-    puts "** #{Conf::APPNAME} is now running at http://#{@addr}:#{@port}/"
+    puts "** #{Conf::APP_NAME} is now running at http://#{@addr}:#{@port}/"
     h.run.join
   end
 end

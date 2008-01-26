@@ -5,44 +5,52 @@
 # - controller and view framework is in framework.rb
 # - "database" aka Git interface is in db.rb
 
-%w{ config framework rubygems metaid redcloth open-uri erubis }.each {|l| require l }
+%w{ config framework db rubygems metaid redcloth open-uri erubis }.each {|l| require l }
 
+# "Page" is a model representing a wiki page
+# Pages are saved locally in the filesystem, changes are committed to a local
+# Git repository which is mirrored to a master repository
 class Page
   VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
   
+  PAGE_DIR = 'pages'
+  PAGE_PATH = File.join(Conf::DATA_DIR, PAGE_DIR)
+    
+  # static methods
+  class << self
+    def list
+      Dir[filepath('*')].collect {|s| s.sub(/^#{PAGE_PATH}\/(.+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
+    end
+
+    def load(name)
+      if exists?(name) 
+        Page.new(name, open(filepath(name)).read)
+      else
+        nil
+      end
+    end
+
+    def exists?(name)
+      File.exists?(filepath(name))
+    end
+
+    # "foo.textile"
+    def filename(name); "#{name}.textile"; end
+
+    # "path/to/foo.textile"
+    def filepath(name); File.join(PAGE_PATH, filename(name)); end
+  end
+  
+  # instance methods
   attr_reader :name
   attr_writer :body
-  
+
   def initialize(name='', body='')
     @name = name
     @body = body
     raise ArgumentError.new("name is invalid: #{name}") if name.any? && !valid_name?
   end
-  
-  def self.list
-    Dir[filename('*')].collect {|s| s.sub(/^content\/(.+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
-  end
-  
-  def self.load(name)
-    if exists?(name)
-      Page.new(name, open(filename(name)).read)
-    else
-      nil
-    end
-  end
-
-  def self.exists?(name)
-    File.exists?(filename(name))
-  end
-  
-  def self.filename(name)
-    "content/#{name}.textile"
-  end
-  
-  def filename
-    Page.filename(name)
-  end
-  
+    
   def body(format=nil)
     case format
     when :html
@@ -53,15 +61,21 @@ class Page
   end
   
   def save
-    save_file(@body, filename)
+    save_file(@body, filepath)
+    relative_path = File.join(PAGE_DIR, filename)
+    Db.save(relative_path, "Satellite: saving #{name}")
   end
   
   def valid_name?
     name =~ /^[#{VALID_NAME_CHARS}]+$/
   end
+  
+  def filename; Page.filename(name); end
+  def filepath; Page.filepath(name); end
 end
 
-
+# The wiki controller just wraps the base framework mongrel request handler
+# to provide some
 class WikiController < RequestHandler
   VALID_CHARS = '\w \+\%\-\.'
   NAME = "([#{VALID_CHARS}]+)"

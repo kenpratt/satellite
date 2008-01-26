@@ -6,23 +6,27 @@
 module Db
     
   def self.sync
-    begin
-      r = Repo.open
-    rescue ArgumentError => e
-      # repo doesn't exist yet
-      r = Repo.clone
-    end
+    r = open_or_create
     r.pull
-    return r
+    #r.push
   end
   
   def self.save(file, message)
-    r = sync
+    r = open_or_create
     r.add(file)
     r.commit(message)
   end
-  
+
   private
+  
+  def self.open_or_create
+    begin
+      Repo.open
+    rescue ArgumentError => e
+      # repo doesn't exist yet
+      Repo.clone
+    end
+  end
   
   class Repo
     def initialize(git_instance)
@@ -37,7 +41,7 @@ module Db
       # create data directory
       FileUtils.mkdir_p(Conf::DATA_DIR)
       FileUtils.cd(Conf::DATA_DIR)
-
+       
       # create git repo
       r = Repo.new(Git.init)
       
@@ -66,7 +70,7 @@ module Db
     
     def method_missing(name, *args)
       if @git.respond_to?(name)
-        @git.send(name, args)
+        @git.send(name, *args)
       else
         raise NameError
       end
