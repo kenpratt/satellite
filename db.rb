@@ -68,6 +68,10 @@ module Db
       end
     end
     
+    def add(file)
+      @git.add("'#{file}'")
+    end
+    
     def method_missing(name, *args)
       if @git.respond_to?(name)
         @git.send(name, *args)
