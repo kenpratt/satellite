@@ -14,7 +14,7 @@ class Conf
   USER_EMAIL    = 'ken@kenpratt.net'
   
   # paths
-  APP_DIR       = File.dirname(File.expand_path(__FILE__))
+  APP_DIR       = File.join(File.dirname(File.expand_path(__FILE__)), '../')
   TEMPLATE_DIR  = File.join(APP_DIR, 'templates')
 
   # path of folder to store wiki app content in (this folder will be created)

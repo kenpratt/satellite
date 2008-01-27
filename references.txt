@@ -1,0 +1,17 @@
+References:
+===========
+
+Erubis:
+http://www.kuwata-lab.com/erubis/users-guide.html
+
+Metaprogramming:
+http://whytheluckystiff.net/articles/seeingMetaclassesClearly.html
+
+Mongrel integration:
+http://pastie.caboo.se/59978
+http://cleanair.highgroove.com/articles/2006/10/03/mini-file-uploads
+
+Git integration:
+http://madduck.net/blog/2007.07.11:publishing-git-repositories/
+http://git.rubyforge.org/
+http://jointheconversation.org/rubygit/#examples

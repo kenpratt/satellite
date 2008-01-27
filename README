@@ -1,0 +1,6 @@
+Satellite
+=========
+
+A distributed wiki designed to run multiple instances, with one server 
+and one or many clients. The client(s) will store content locally and 
+mirror with the server when a network connection is available.

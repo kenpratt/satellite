@@ -1,0 +1,22 @@
+Tasks:
+======
+
+Now:
+* cron script to pull & push to master repo
+* notification of edit conflicts between repos (sync errors)
+* history view for a page
+* clean up controller route metaprogramming
+
+Soon:
+* wiki linking
+* rspec testing framework
+* app auto-reloading
+* rename page
+* revert page to some previous version
+* delete page
+
+Later:
+* user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
+* multiple remote repository support (instead of master/slave)
+* code block syntax shortcut
+* code syntax highlighting
