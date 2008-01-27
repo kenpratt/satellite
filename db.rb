@@ -4,7 +4,9 @@
 %w{ config rubygems fileutils git }.each {|l| require l }
 
 module Db
-    
+  
+  class ContentNotModified < RuntimeError; end
+  
   def self.sync
     r = open_or_create
     r.pull
@@ -28,35 +30,41 @@ module Db
     end
   end
   
+  # private inner class that encapsulates Git operations
   class Repo
+
+    # static methods
+    class << self
+      def open
+        Repo.new(Git.open(Conf::DATA_DIR))
+      end
+
+      def clone
+        # create data directory
+        FileUtils.mkdir_p(Conf::DATA_DIR)
+        FileUtils.cd(Conf::DATA_DIR)
+
+        # create git repo
+        r = Repo.new(Git.init)
+
+        # set user params
+        r.config('user.name', Conf::USER_NAME)
+        r.config('user.email', Conf::USER_EMAIL)
+
+        # add origin
+        r.add_remote('origin', Conf::ORIGIN_URI)
+
+        # pull down initial content
+        r.pull
+
+        # return repository instance
+        return r
+      end
+    end
+
+    # instance methods
     def initialize(git_instance)
       @git = git_instance
-    end
-    
-    def self.open
-      Repo.new(Git.open(Conf::DATA_DIR))
-    end
-    
-    def self.clone
-      # create data directory
-      FileUtils.mkdir_p(Conf::DATA_DIR)
-      FileUtils.cd(Conf::DATA_DIR)
-       
-      # create git repo
-      r = Repo.new(Git.init)
-      
-      # set user params
-      r.config('user.name', Conf::USER_NAME)
-      r.config('user.email', Conf::USER_EMAIL)
-
-      # add origin
-      r.add_remote('origin', Conf::ORIGIN_URI)
-
-      # pull down initial content
-      r.pull
-      
-      # return repository instance
-      return r
     end
     
     def pull
@@ -70,6 +78,18 @@ module Db
     
     def add(file)
       @git.add("'#{file}'")
+    end
+    
+    def commit(msg)
+      begin
+        @git.commit(msg)
+      rescue Git::GitExecuteError => e
+        if e.message.include?('nothing to commit')
+          raise ContentNotModified
+        else
+          raise e
+        end
+      end
     end
     
     def method_missing(name, *args)

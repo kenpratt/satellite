@@ -48,7 +48,7 @@ class Page
   def initialize(name='', body='')
     @name = name
     @body = body
-    raise ArgumentError.new("name is invalid: #{name}") if name.any? && !valid_name?
+    raise ArgumentError.new("Name is invalid: #{name}") if name.any? && !valid_name?
   end
     
   def body(format=nil)
@@ -61,9 +61,13 @@ class Page
   end
   
   def save
-    save_file(@body, filepath)
-    relative_path = File.join(PAGE_DIR, filename)
-    Db.save(relative_path, "Satellite: saving #{name}")
+    begin
+      save_file(@body, filepath)
+      relative_path = File.join(PAGE_DIR, filename)
+      Db.save(relative_path, "Satellite: saving #{name}")
+    rescue Db::ContentNotModified
+      log "Didn't need to save #{name}"
+    end
   end
   
   def valid_name?
@@ -170,4 +174,6 @@ ROUTES = [
   [ '/list', ListController.new ]
 ]
 
-Server.new(Conf::SERVER_IP, Conf::SERVER_PORT, ROUTES).start
+if $0 == __FILE__
+  Server.new(Conf::SERVER_IP, Conf::SERVER_PORT, ROUTES).start
+end
