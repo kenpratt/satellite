@@ -14,6 +14,7 @@ module Satellite
   # Git repository which is mirrored to a master repository
   class Page
     VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
+    WIKI_LINK_FMT = /\{\{([#{VALID_NAME_CHARS}]+)\}\}/
   
     PAGE_DIR = 'pages'
     PAGE_PATH = File.join(Conf::DATA_DIR, PAGE_DIR)
@@ -25,7 +26,7 @@ module Satellite
       end
 
       def load(name)
-        if exists?(name) 
+        if exists?(name)
           Page.new(name, open(filepath(name)).read)
         else
           nil
@@ -52,11 +53,11 @@ module Satellite
       @body = body
       raise ArgumentError.new("Name is invalid: #{name}") if name.any? && !valid_name?
     end
-    
+
     def body(format=nil)
       case format
       when :html
-        RedCloth.new(@body).to_html
+        to_html
       else
         @body
       end
@@ -75,9 +76,34 @@ module Satellite
     def valid_name?
       name =~ /^[#{VALID_NAME_CHARS}]+$/
     end
+    
+    def to_html
+      str = @body
+      
+      # wiki linking
+      str = str.gsub(WIKI_LINK_FMT) do |s|
+        name, uri = $1, WikiController::Uri.page($1)
+        notextile do
+          if Page.exists?(name)
+            "<a href=\"#{uri}\">#{name}</a>"
+          else
+            "<span class=\"nonexistant\">#{name}<a href=\"#{uri}\">?</a></span>"
+          end 
+        end
+      end
+      
+      # textile -> html filtering
+      RedCloth.new(str).to_html
+    end
   
     def filename; Page.filename(name); end
     def filepath; Page.filepath(name); end
+    
+    # helper to wrap wrap block in notextile tags (block should return html string)
+    def notextile
+      str = yield
+      "<notextile>#{str.to_s}</notextile>" if str && str.any?
+    end
   end
 
   # The wiki controller just wraps the base framework mongrel request handler
@@ -149,7 +175,7 @@ module Satellite
     end
   
     def post
-      page = Page.new(@input['name'], @input['content'])
+      page = Page.new(@input['name'].strip, @input['content'])
       unless Page.exists?(page.name)
         page.save
         redirect Uri.page(page.name)

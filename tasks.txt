@@ -8,7 +8,6 @@ Now:
 * clean up controller route metaprogramming
 
 Soon:
-* wiki linking
 * rspec testing framework
 * app auto-reloading
 * rename page
