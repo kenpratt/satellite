@@ -13,6 +13,8 @@ module Satellite
   # Pages are saved locally in the filesystem, changes are committed to a local
   # Git repository which is mirrored to a master repository
   class Page
+    include Comparable
+    
     VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
     WIKI_LINK_FMT = /\{\{([#{VALID_NAME_CHARS}]+)\}\}/
   
@@ -22,7 +24,7 @@ module Satellite
     # static methods
     class << self
       def list
-        Dir[filepath('*')].collect {|s| s.sub(/^#{PAGE_PATH}\/(.+)\.textile$/, '\1') }.sort.collect {|s| Page.new(s) }
+        Dir[filepath('*')].collect {|s| s.sub(/^#{PAGE_PATH}\/(.+)\.textile$/, '\1') }.collect {|s| Page.new(s) }.sort
       end
 
       def load(name)
@@ -75,6 +77,17 @@ module Satellite
   
     def valid_name?
       name =~ /^[#{VALID_NAME_CHARS}]+$/
+    end
+    
+    # sort home above other pages, otherwise alphabetical order
+    def <=>(other)
+      if name == 'Home'
+        -1
+      elsif other.name == 'Home'
+        1
+      else
+        name <=> other.name
+      end
     end
     
     def to_html
