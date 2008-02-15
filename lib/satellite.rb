@@ -150,6 +150,11 @@ module Satellite
         end
       end
     end
+    
+    class IndexController < controller '/'
+      def get; redirect Uri.home; end
+      def post; redirect Uri.home; end
+    end
 
     class PageController < controller "/page/#{PAGE_NAME}", "/page/#{PAGE_NAME}/(edit)"
       def get(name, action='view')

@@ -170,12 +170,17 @@ module Framework
         else
           raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
         end
-      
+      rescue Router::NoPathFound
+        log "Error occured: No route found for '#{request_uri}', returning 404."
+        response.start(404) do |head, out|
+          head['Content-Type'] = 'text/html'
+          out.write("<pre>404, baby. aint nothing at '#{request_uri}'</pre>")
+        end
       rescue Exception => e
         log "Error occured:"
         log "#{e.class}: #{e.message}"
         log e.backtrace.collect {|s| "        #{s}\n" }.join
-        @response.start(500) do |head, out|
+        response.start(500) do |head, out|
           head['Content-Type'] = 'text/html'
           out.write '<pre>'
           out.write "#{e.class}: #{e.message}\n"
