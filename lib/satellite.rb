@@ -41,11 +41,24 @@ module Satellite
         def exists?(name)
           File.exists?(filepath(name))
         end
+        
+        def valid_name?(name)
+          name =~ /^[#{VALID_NAME_CHARS}]+$/
+        end
+        
+        def rename(old_name, new_name)
+          page = load(old_name)
+          page.rename(new_name) if page
+          page
+        end
 
         # "foo.textile"
         def filename(name); "#{name}.textile"; end
+        
+        # "pages/foo.textile"
+        def local_filepath(name); File.join(PAGE_DIR, filename(name)); end
 
-        # "path/to/foo.textile"
+        # "path/to/pages/foo.textile"
         def filepath(name); File.join(PAGE_PATH, filename(name)); end
       end
   
@@ -71,15 +84,20 @@ module Satellite
       def save
         begin
           save_file(@body, filepath)
-          relative_path = File.join(PAGE_DIR, filename)
-          Db.save(relative_path, "Satellite: saving #{name}")
+          Db.save(local_filepath, "Satellite: saving #{name}")
         rescue Db::ContentNotModified
           log "Didn't need to save #{name}"
         end
       end
   
       def valid_name?
-        name =~ /^[#{VALID_NAME_CHARS}]+$/
+        Page.valid_name?(name)
+      end
+      
+      def rename(new_name)
+        raise ArgumentError.new("Name is invalid: #{new_name}") unless new_name.any? && Page.valid_name?(new_name)
+        Db.mv(local_filepath, Page.local_filepath(new_name), "Satellite: renaming #{name} to #{new_name}")
+        @name = new_name
       end
     
       # sort home above other pages, otherwise alphabetical order
@@ -113,6 +131,7 @@ module Satellite
       end
   
       def filename; Page.filename(name); end
+      def local_filepath; Page.local_filepath(name); end
       def filepath; Page.filepath(name); end
     
       # helper to wrap wrap block in notextile tags (block should return html string)
@@ -144,6 +163,7 @@ module Satellite
         class << self
           def page(name) "/page/#{escape(name)}" end
           def edit_page(name) "/page/#{escape(name)}/edit" end
+          def rename_page(name) "/page/#{escape(name)}/rename" end
           def new_page() '/new' end
           def list() '/list' end
           def home() '/page/Home' end
@@ -192,6 +212,18 @@ module Satellite
         else
           render 'new_page', 'Add page', :page => page, :error => "A page named #{page.name} already exists"
         end
+      end
+    end
+    
+    class RenamePageController < controller "/page/#{PAGE_NAME}/rename"
+      def get(name)
+        page = Models::Page.load(name)
+        render 'rename_page', "Renaming #{page.name}", :page => page
+      end
+      
+      def post(name)
+        page = Models::Page.rename(name, @input['new_name'].strip)
+        redirect Uri.page(page.name)
       end
     end
 

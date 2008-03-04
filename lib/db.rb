@@ -7,16 +7,24 @@ module Db
   
   class ContentNotModified < RuntimeError; end
   
-  def self.sync
-    r = open_or_create
-    r.pull
-    #r.push
-  end
-  
-  def self.save(file, message)
-    r = open_or_create
-    r.add(file)
-    r.commit(message)
+  class << self
+    def sync
+      r = open_or_create
+      r.pull
+      #r.push
+    end
+
+    def save(file, message)
+      r = open_or_create
+      r.add(file)
+      r.commit(message)
+    end
+
+    def mv(from, to, message)
+      r = open_or_create
+      r.mv(from, to)
+      r.commit(message)
+    end
   end
 
   private
@@ -78,6 +86,12 @@ module Db
     
     def add(file)
       @git.add("'#{file}'")
+    end
+    
+    def mv(from, to)
+      FileUtils.mv(File.join(Conf::DATA_DIR, from), File.join(Conf::DATA_DIR, to))
+      @git.add("'#{to}'")
+      @git.remove("'#{from}'")
     end
     
     def commit(msg)

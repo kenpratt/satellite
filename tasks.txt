@@ -8,10 +8,10 @@ Now:
 Soon:
 * rspec testing framework
 * app auto-reloading
-* rename page
 * delete page
 * text search
-* history view for a page
+* fix incoming links during rename operation
+* history view
 * revert page to some previous version
 
 Later:

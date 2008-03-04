@@ -1,2 +1,5 @@
 <%= @page.body(:html) %>
-<p><a href="<%= @uri.edit_page(@page.name) %>">Edit</a></p>
+<p>
+	<a href="<%= @uri.edit_page(@page.name) %>">Edit</a> |
+	<a href="<%= @uri.rename_page(@page.name) %>">Rename</a>
+</p>
