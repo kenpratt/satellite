@@ -38,10 +38,18 @@ h1, h2, h3, h4, h5 {
   font-weight: bold;
 }
 
+h2 {
+  margin-bottom: 0.5em;
+}
+
 li {
   margin-left: 1.5em;
 }
 
 .nonexistant {
   color: #d30;
+}
+
+textarea#content {
+  width: 90%;
 }
