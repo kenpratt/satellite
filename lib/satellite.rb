@@ -99,6 +99,10 @@ module Satellite
         Db.mv(local_filepath, Page.local_filepath(new_name), "Satellite: renaming #{name} to #{new_name}")
         @name = new_name
       end
+      
+      def delete!
+        Db.rm(local_filepath, "Satellite: deleting #{name}")
+      end
     
       # sort home above other pages, otherwise alphabetical order
       def <=>(other)
@@ -164,6 +168,7 @@ module Satellite
           def page(name) "/page/#{escape(name)}" end
           def edit_page(name) "/page/#{escape(name)}/edit" end
           def rename_page(name) "/page/#{escape(name)}/rename" end
+          def delete_page(name) "/page/#{escape(name)}/delete" end
           def new_page() '/new' end
           def list() '/list' end
           def home() '/page/Home' end
@@ -224,6 +229,19 @@ module Satellite
       def post(name)
         page = Models::Page.rename(name, @input['new_name'].strip)
         redirect Uri.page(page.name)
+      end
+    end
+
+    class DeletePageController < controller "/page/#{PAGE_NAME}/delete"
+      def get(name)
+        page = Models::Page.load(name)
+        render 'delete_page', "Deleting #{page.name}", :page => page
+      end
+      
+      def post(name)
+        page = Models::Page.load(name)
+        page.delete!
+        redirect Uri.list
       end
     end
 

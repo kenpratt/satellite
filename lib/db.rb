@@ -16,25 +16,37 @@ module Db
 
     def save(file, message)
       r = open_or_create
-      r.add(file)
+      r.add(quote(file))
       r.commit(message)
     end
 
     def mv(from, to, message)
       r = open_or_create
-      r.mv(from, to)
+      r.mv(quote(from), quote(to))
+      r.commit(message)
+    end
+    
+    def rm(file, message)
+      r = open_or_create
+      r.remove(quote(file))
       r.commit(message)
     end
   end
 
   private
   
-  def self.open_or_create
-    begin
-      Repo.open
-    rescue ArgumentError => e
-      # repo doesn't exist yet
-      Repo.clone
+  class << self
+    def quote(s)
+      "'#{s}'"
+    end
+  
+    def open_or_create
+      begin
+        Repo.open
+      rescue ArgumentError => e
+        # repo doesn't exist yet
+        Repo.clone
+      end
     end
   end
   
@@ -85,13 +97,13 @@ module Db
     end
     
     def add(file)
-      @git.add("'#{file}'")
+      @git.add(file)
     end
     
     def mv(from, to)
       FileUtils.mv(File.join(Conf::DATA_DIR, from), File.join(Conf::DATA_DIR, to))
-      @git.add("'#{to}'")
-      @git.remove("'#{from}'")
+      @git.add(to)
+      @git.remove(from)
     end
     
     def commit(msg)

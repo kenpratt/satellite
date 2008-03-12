@@ -8,11 +8,11 @@ Now:
 Soon:
 * rspec testing framework
 * app auto-reloading
-* delete page
 * text search
 * fix incoming links during rename operation
 * history view
 * revert page to some previous version
+* file uploads
 
 Later:
 * user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
