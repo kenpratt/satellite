@@ -11,7 +11,7 @@ module Db
     def sync
       r = open_or_create
       r.pull
-      #r.push
+      r.push
     end
 
     def save(file, message)
@@ -56,7 +56,9 @@ module Db
     # static methods
     class << self
       def open
-        Repo.new(Git.open(Conf::DATA_DIR))
+        r = Repo.new(Git.open(Conf::DATA_DIR))
+        r.update_config
+        r
       end
 
       def clone
@@ -87,11 +89,25 @@ module Db
       @git = git_instance
     end
     
+    def update_config
+      { 
+        'user.name' => Conf::USER_NAME,
+        'user.email' => Conf::USER_EMAIL,
+        'remote.origin.url' => Conf::ORIGIN_URI
+      }.each do |k, v|
+        if (old = @git.config(k)) != v
+          puts "updating configuration: changing #{k} from '#{old}' to '#{v}'"
+          @git.config(k, v)
+        end
+      end
+    end
+    
     def pull
       begin
         @git.pull
       rescue Git::GitExecuteError => e
-        # this error is returned when repo exists but is empty, so ignore it
+        # a 'no matching remote head' error is returned when the remote repo
+        # exists but is currently empty, so we can safely ignore it
         raise e unless e.message.include?('no matching remote head')
       end
     end
