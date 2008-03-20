@@ -2,12 +2,9 @@ Tasks:
 ======
 
 Now:
-* cron script to pull from & push to master repo
-* notification of edit conflicts between repos (sync errors)
-* command-line conflict resolution
+* make sync script run persistently (cron/daemon/page request/etc)
 
 Soon:
-* web interface for conflict resolution
 * rspec testing framework
 * app auto-reloading
 * text search
@@ -19,6 +16,7 @@ Soon:
 * code syntax highlighting
 
 Later?:
+* prettier web interface for conflict resolution
 * user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
 * multiple remote repository support (instead of master/slave)
-* del.icio.us integration 
+* del.icio.us integration

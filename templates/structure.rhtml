@@ -22,8 +22,24 @@
 		</div>
 
 		<div id="content-box">
-			<h2><%= @title %></h2>
 			<% if @error %><p class="error"><%= @error %></p><% end %>
+			<% if @conflicts.any? %>
+				<div class="conflicts">
+					<h4>Warning</h4>
+					<p>
+						Conflicts occurred during the last sync operation. Please
+						resolve the following pages as soon as possible:
+					</p>
+					<ul>
+						<% for page in @conflicts %>
+							<li><a href="<%= @uri.resolve_conflict(page.name) %>">Resolve '<%= page.name %>'</a></li>
+						<% end %>
+					</ul>
+				</div>
+			<% end %>
+			
+			<h2><%= @title %></h2>
+			
 			<%= @inner %>
 		</div>
 

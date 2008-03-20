@@ -27,9 +27,13 @@ module Satellite
       # static methods
       class << self
         def list
-          Dir[filepath('*')].collect {|s| s.sub(/^#{PAGE_PATH}\/(.+)\.textile$/, '\1') }.collect {|s| Page.new(s) }.sort
+          Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
         end
-
+        
+        def conflicts
+          Db.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
+        end
+        
         def load(name)
           if exists?(name)
             Page.new(name, open(filepath(name)).read)
@@ -60,6 +64,18 @@ module Satellite
 
         # "path/to/pages/foo.textile"
         def filepath(name); File.join(PAGE_PATH, filename(name)); end
+        
+        # try to extract the page name from the path
+        def parse_name(path)
+          case path
+          when /^([#{VALID_NAME_CHARS}]+)\.textile$/,
+               /^#{PAGE_DIR}\/([#{VALID_NAME_CHARS}]+)\.textile$/,
+               /^#{PAGE_PATH}\/([#{VALID_NAME_CHARS}]+)\.textile$/
+            $1
+          else
+            path
+          end
+        end
       end
   
       # instance methods
@@ -152,15 +168,15 @@ module Satellite
     VALID_PAGE_NAME_CHARS = '\w \+\%\-\.'
     PAGE_NAME = "([#{VALID_PAGE_NAME_CHARS}]+)"
 
-    # reopen controller class to provide some app-specific logic
+    # reopen framework controller class to provide some app-specific logic
     class Framework::Controller
-      
       # pass title and uri mappings into templates too
       alias :original_render :render
       def render(template, title, params={})
-        original_render(template, params.merge!({ :title => title, :uri => Uri }))
+        common_params = { :title => title, :uri => Uri, :conflicts => Satellite::Models::Page.conflicts }
+        original_render(template, params.merge!(common_params))
       end
-  
+
       # uri mappings
       # TODO somehow generate these from routing table?
       class Uri
@@ -169,19 +185,20 @@ module Satellite
           def edit_page(name) "/page/#{escape(name)}/edit" end
           def rename_page(name) "/page/#{escape(name)}/rename" end
           def delete_page(name) "/page/#{escape(name)}/delete" end
+          def resolve_conflict(name) "/page/#{escape(name)}/resolve" end
           def new_page() '/new' end
           def list() '/list' end
           def home() '/page/Home' end
         end
       end
     end
-    
+
     class IndexController < controller '/'
       def get; redirect Uri.home; end
       def post; redirect Uri.home; end
     end
 
-    class PageController < controller "/page/#{PAGE_NAME}", "/page/#{PAGE_NAME}/(edit)"
+    class PageController < controller "/page/#{PAGE_NAME}", "/page/#{PAGE_NAME}/(edit|resolve)"
       def get(name, action='view')
         page = Models::Page.load(name)
         case action
@@ -194,6 +211,14 @@ module Satellite
         when 'edit'
           page ||= Models::Page.new(name)
           render 'edit_page', "Editing #{page.name}", :page => page
+        when 'resolve'
+          if page
+            render 'resolve_page_conflict', "Resolving #{page.name}", :page => page
+          else
+            redirect Uri.edit_page(name)
+          end
+        else
+          raise RuntimeError.new("PageController does not support the '#{action}' action.")
         end
       end
   
