@@ -106,9 +106,18 @@ module Db
       begin
         @git.pull
       rescue Git::GitExecuteError => e
-        # a 'no matching remote head' error is returned when the remote repo
-        # exists but is currently empty, so we can safely ignore it
-        raise e unless e.message.include?('no matching remote head')
+        case e.message
+        when /no matching remote head/
+          # a 'no matching remote head' error is returned when the remote repo
+          # exists but is currently empty, so we can safely ignore it
+        when /unable to chdir or not a git archive/
+          # remote repo doesn't exist!
+          die "Error: It appears that the remote repository (#{Conf::ORIGIN_URI}) " +
+            "does not exist. Please try running the 'create_master_repo' script " +
+            "to create the repository."
+        else
+          raise e
+        end
       end
     end
     
@@ -142,5 +151,10 @@ module Db
       end
     end
   end
+end
+
+def die(msg)
+  puts msg
+  exit 1
 end
 

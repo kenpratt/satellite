@@ -1,31 +1,57 @@
 #!/usr/bin/env bash
 #
-# Create a git repository
+# Create a master git repository
 #
 
-USAGE="$0 <GROUP> <PATH_TO_CREATE_REPOSITORY>"
+# print usage
+usage() { echo "Usage: $0 [-h] [-g group] path/to/create/repository/at" >&2; }
 
-# parse args
-group="$1"
-dest="$2"
+# quit with an error message
+die() { echo "Error: $*"; usage; exit 1; }
 
-die() { echo "Error: $*" && echo "Usage: $USAGE" >&2; exit 1; }
+# parse arguments
+group=
+dest=
+set -- `getopt g:h "$@"`
+[ $# -lt 1 ] && exit 1	# getopt failed
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		-g)	group="$2"; shift;;
+		--)	shift; break;;
+		-h) usage; exit 1;;
+		-*) usage; exit 1;;
+		*)  break;;
+	esac
+	shift
+done
+dest="$@"
 
-# ensure args are valid
-[ "$group" ] || die "missing group name"
-[ "$dest" ] || die "missing name of the repository directory"
-[ -e "$dest" ] && die "$dest already exists"
+# ensure arguments are valid
+[ "$dest" ] || die "Missing path to create the repository at"
+[ -e "$dest" ] && die "'$dest' already exists -- needs to be a nonexistant path"
 
 # so we don't need to cd into dest dir
 export GIT_DIR="$dest"
 
 # set up dir/permissions
 umask 002
-mkdir "$dest" || exit 1
-chgrp "$group" "$dest" && chmod 2775 "$dest" || exit 1
+mkdir "$dest" || die "Failed to create directory '$dest'"
+
+# set up group ownership if group name was given
+if [ "$group" ]; then
+	chgrp "$group" "$dest" || die "Failed to give ownership to group '$group'"
+fi
+
+# set up permissions
+chmod 2775 "$dest" || die "Failed to set up permissions"
 
 # initialize repo
-git-init --shared || die "git-init failed"
+if [ "$group" ]; then
+	git-init --shared=group || die "Failed to initialize the repository"
+else
+	git-init || die "Failed to initialize the repository"
+fi
 
 # enable commit hooks
-chmod a+x "$dest/hooks/post-update"
+chmod a+x "$dest/hooks/post-update" || die "Failed to turn on post-update hooks"
