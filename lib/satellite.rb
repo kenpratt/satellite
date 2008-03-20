@@ -222,7 +222,7 @@ module Satellite
           render 'edit_page', "Editing #{page.name}", :page => page
         when 'resolve'
           if page
-            render 'resolve_page_conflict', "Resolving #{page.name}", :page => page
+            render 'resolve_conflict_page', "Resolving #{page.name}", :page => page
           else
             redirect Uri.edit_page(name)
           end
