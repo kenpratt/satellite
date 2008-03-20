@@ -6,4 +6,11 @@
 %w{ config lib }.each {|l| $LOAD_PATH.unshift("#{File.expand_path(File.dirname(__FILE__))}/../#{l}") }
 
 require 'db'
-Db.sync
+
+begin
+  Db.sync
+rescue Db::MergeConflict => e
+  puts "Error: Encountered conflicts during sync. The following files must be merged manually:"
+  puts Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
+  exit 1
+end

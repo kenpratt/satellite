@@ -3,15 +3,45 @@
 
 %w{ config rubygems fileutils git }.each {|l| require l }
 
+# monkey-patch ruby/git bridge to allow listing of unmerged files
+Git::Lib.class_eval do
+  def ls_files(opts=nil)
+    hsh = {}
+    command_lines('ls-files', opts || ['--stage']).each do |line|
+      (info, file) = line.split("\t")
+      (mode, sha, stage) = info.split
+      hsh[file] = {:path => file, :mode_index => mode, :sha_index => sha, :stage => stage}
+    end
+    hsh
+  end
+end
+Git::Base.class_eval do
+  def ls_files(opts=nil)
+    self.lib.ls_files(opts)
+  end
+  def ls_unmerged_files
+    ls_files("--unmerged")
+  end
+end
+
+# wrapper for ruby/git bridge
 module Db
   
   class ContentNotModified < RuntimeError; end
+  class ConfigurationError < RuntimeError; end
+  class MergeConflict < RuntimeError; end
   
   class << self
+
     def sync
       r = open_or_create
       r.pull
       r.push
+    end
+    
+    def conflicts
+      r = open_or_create
+      r.ls_unmerged_files.keys
     end
 
     def save(file, message)
@@ -104,7 +134,9 @@ module Db
     
     def pull
       begin
-        @git.pull
+        # the documentation claims that the second argument should just be 
+        # 'master', but that doesn't seem to work
+        @git.pull('origin', 'origin/master', 'pulling from remote repository')
       rescue Git::GitExecuteError => e
         case e.message
         when /no matching remote head/
@@ -112,9 +144,12 @@ module Db
           # exists but is currently empty, so we can safely ignore it
         when /unable to chdir or not a git archive/
           # remote repo doesn't exist!
-          die "Error: It appears that the remote repository (#{Conf::ORIGIN_URI}) " +
-            "does not exist. Please try running the 'create_master_repo' script " +
-            "to create the repository."
+          raise ConfigurationError.new("It appears that the remote repository " +
+            "(#{Conf::ORIGIN_URI}) does not exist. Please try running the " +
+            "'create_master_repo' script to create the repository.")
+        when /Merge conflict/, /You are in the middle of a conflicted merge/
+          # someone committed a conflicting change to the remote repository
+          raise MergeConflict.new(e.message)
         else
           raise e
         end
@@ -135,7 +170,8 @@ module Db
       begin
         @git.commit(msg)
       rescue Git::GitExecuteError => e
-        if e.message.include?('nothing to commit')
+        case e.message
+        when /nothing to commit/
           raise ContentNotModified
         else
           raise e
@@ -152,9 +188,3 @@ module Db
     end
   end
 end
-
-def die(msg)
-  puts msg
-  exit 1
-end
-

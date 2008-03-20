@@ -7,7 +7,8 @@ class Conf
   SERVER_PORT   = 3000
     
   # URI of master git repository for wiki content
-  ORIGIN_URI    =  'git+ssh://mueller/git/wiki.kenpratt.net'
+  #ORIGIN_URI    =  'git+ssh://mueller/git/wiki.kenpratt.net'
+  ORIGIN_URI    = '~/tmp/satellite_master_repo'
   
   # user information to use for git content submissions
   USER_NAME     = 'Ken Pratt'
