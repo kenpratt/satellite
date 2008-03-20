@@ -103,6 +103,9 @@ module Db
         r.config('user.name', Conf::USER_NAME)
         r.config('user.email', Conf::USER_EMAIL)
 
+        # convert line endings to LF on commit
+        r.config('core.autocrlf', 'input')
+
         # add origin
         r.add_remote('origin', Conf::ORIGIN_URI)
 

@@ -80,11 +80,10 @@ module Satellite
   
       # instance methods
       attr_reader :name
-      attr_writer :body
 
-      def initialize(name='', body='')
+      def initialize(name='', raw_body='')
         @name = name
-        @body = body
+        self.body = raw_body
         raise ArgumentError.new("Name is invalid: #{name}") if name.any? && !valid_name?
       end
 
@@ -95,6 +94,16 @@ module Satellite
         else
           @body
         end
+      end
+      
+      def body=(str='')
+        # fix line endings coming from browser
+        str.gsub!(/\r\n/, "\n")
+        
+        # end page with newline if it doesn't have one
+        str += "\n" unless str[-1..-1] == "\n"
+        
+        @body = str
       end
   
       def save
