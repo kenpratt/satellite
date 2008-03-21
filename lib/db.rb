@@ -27,8 +27,9 @@ end
 # wrapper for ruby/git bridge
 module Db
   
-  class ContentNotModified < RuntimeError; end
   class ConfigurationError < RuntimeError; end
+  class FileNotFound < RuntimeError; end
+  class ContentNotModified < RuntimeError; end
   class MergeConflict < RuntimeError; end
   
   class << self
@@ -164,7 +165,17 @@ module Db
     end
     
     def mv(from, to)
-      FileUtils.mv(File.join(Conf::DATA_DIR, from), File.join(Conf::DATA_DIR, to))
+      puts "moving '#{from}' to '#{to}'"
+      begin
+        FileUtils.mv(File.join(Conf::DATA_DIR, from), File.join(Conf::DATA_DIR, to))
+      rescue Errno::ENOENT => e
+        case e.message
+        when /No such file or directory/
+          raise FileNotFound.new("File '#{from}' does not exist")
+        else
+          raise e
+        end
+      end
       @git.add(to)
       @git.remove(from)
     end

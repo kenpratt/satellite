@@ -24,7 +24,10 @@ module Satellite
       PAGE_DIR = 'pages'
       PAGE_PATH = File.join(Conf::DATA_DIR, PAGE_DIR)
     
-      # static methods
+      # -----------------------------------------------------------------------
+      # class methods
+      # -----------------------------------------------------------------------
+
       class << self
         def list
           Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
@@ -47,7 +50,7 @@ module Satellite
         end
         
         def valid_name?(name)
-          name =~ /^[#{VALID_NAME_CHARS}]+$/
+          name =~ /^[#{VALID_NAME_CHARS}]*$/
         end
         
         def rename(old_name, new_name)
@@ -78,14 +81,20 @@ module Satellite
         end
       end
   
+      # -----------------------------------------------------------------------
       # instance methods
-      attr_reader :name
+      # -----------------------------------------------------------------------
 
-      def initialize(name='', raw_body='')
-        @name = name
-        self.body = raw_body
-        raise ArgumentError.new("Name is invalid: #{name}") if name.any? && !valid_name?
+      def initialize(name='', body='')
+        self.name = name
+        self.body = body
       end
+      
+      def name
+        @name
+      end
+      
+      # name= method is private (see below)
 
       def body(format=nil)
         case format
@@ -97,17 +106,19 @@ module Satellite
       end
       
       def body=(str='')
-        # fix line endings coming from browser
-        str.gsub!(/\r\n/, "\n")
+        if str.any?
+          # fix line endings coming from browser
+          str.gsub!(/\r\n/, "\n")
         
-        # end page with newline if it doesn't have one
-        str += "\n" unless str[-1..-1] == "\n"
-        
+          # end page with newline if it doesn't have one
+          str += "\n" unless str[-1..-1] == "\n"
+        end
         @body = str
       end
   
       def save
         begin
+          raise ArgumentError.new("Saved name can't be blank") unless name.any?
           save_file(@body, filepath)
           Db.save(local_filepath, "Satellite: saving #{name}")
         rescue Db::ContentNotModified
@@ -115,14 +126,12 @@ module Satellite
         end
       end
   
-      def valid_name?
-        Page.valid_name?(name)
-      end
-      
       def rename(new_name)
-        raise ArgumentError.new("Name is invalid: #{new_name}") unless new_name.any? && Page.valid_name?(new_name)
-        Db.mv(local_filepath, Page.local_filepath(new_name), "Satellite: renaming #{name} to #{new_name}")
-        @name = new_name
+        old_name = name
+        self.name = new_name
+        raise ArgumentError.new("New name can't be blank") unless name.any?
+        p "Satellite: renaming #{old_name} to #{name}"
+        Db.mv(Page.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
       end
       
       def delete!
@@ -167,6 +176,14 @@ module Satellite
       def notextile
         str = yield
         "<notextile>#{str.to_s}</notextile>" if str && str.any?
+      end
+
+    private
+
+      def name=(name)
+        name.strip!
+        raise ArgumentError.new("Name is invalid: #{name}") unless Page.valid_name?(name)
+        @name = name
       end
     end
   end
