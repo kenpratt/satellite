@@ -20,6 +20,27 @@ module Satellite
     
       VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
       WIKI_LINK_FMT = /\{\{([#{VALID_NAME_CHARS}]+)\}\}/
+      
+      AUTO_LINK_RE = %r{
+                      (                          # leading text
+                        <\w+.*?>|                # leading HTML tag, or
+                        [^=!:'"/]|               # leading punctuation, or 
+                        ^                        # beginning of line
+                      )
+                      (
+                        (?:https?://)|           # protocol spec, or
+                        (?:www\.)                # www.*
+                      ) 
+                      (
+                        [-\w]+                   # subdomain or domain
+                        (?:\.[-\w]+)*            # remaining subdomains or domain
+                        (?::\d+)?                # port
+                        (?:/(?:(?:[~\w\+@%=-]|(?:[,.;:][^\s$]))+)?)* # path
+                        (?:\?[\w\+@%&=.;-]+)?     # query string
+                        (?:\#[\w\-]*)?           # trailing anchor
+                      )
+                      ([[:punct:]]|\s|<|$)       # trailing text
+                     }x unless const_defined?(:AUTO_LINK_RE)
   
       PAGE_DIR = 'pages'
       PAGE_PATH = File.join(Conf::DATA_DIR, PAGE_DIR)
@@ -165,7 +186,19 @@ module Satellite
         end
       
         # textile -> html filtering
-        RedCloth.new(str).to_html
+        html = RedCloth.new(str).to_html
+        
+        # auto-linking
+        html = html.gsub(AUTO_LINK_RE) do
+          all, a, b, c, d = $&, $1, $2, $3, $4
+          if a =~ /<a\s/i # don't replace URL's that are already linked
+            all
+          else
+            "#{a}<a href=\"#{ b == 'www.' ? 'http://www.' : b }#{c}\">#{b + c}</a>#{d}"
+          end
+        end
+        
+        html
       end
   
       def filename; Page.filename(name); end
