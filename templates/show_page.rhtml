@@ -1,3 +1,9 @@
+<script type="text/javascript" src="/static/hotkeys.js"></script>
+<script type="text/javascript">
+	HotKeys.add('e', redirect('<%= @uri.edit_page(@page.name) %>'));
+	HotKeys.attach();
+</script>
+
 <%= @page.body(:html) %>
 <p>
 	<a href="<%= @uri.edit_page(@page.name) %>">Edit</a> |
