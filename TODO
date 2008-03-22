@@ -1,11 +1,14 @@
-Tasks:
-======
+= Satellite
 
-Now:
+== Tasks
+
+=== Now
+
 * make sync script run persistently (cron/daemon/page request/etc)
-
-Soon:
 * rspec testing framework
+
+=== Soon
+
 * app auto-reloading
 * text search
 * fix incoming links during rename operations
@@ -15,8 +18,10 @@ Soon:
 * code block syntax shortcut
 * code syntax highlighting
 
-Later?:
-* prettier web interface for conflict resolution
+=== Later?
+
+* prettier web interface for manual conflict resolution
 * user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
 * multiple remote repository support (instead of master/slave)
+* tagging
 * del.icio.us integration

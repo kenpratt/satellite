@@ -1,6 +1,23 @@
-Satellite
-=========
+= Satellite
 
-A distributed wiki designed to run multiple instances, with one server 
-and one or many clients. The client(s) will store content locally and 
-mirror with the server when a network connection is available.
+Satellite is a distributed wiki client. One or more Satellite clients can 
+synchronize with the same headless Satellite repository. The client(s) store
+content locally and mirror with the server when a network connection is 
+available. So you can edit your Satellite wiki when offline, and your changes
+will be reflected in other Satellite clients when you re-connect to the 
+internet.
+
+Satellite uses "Git":http://git.or.cz/ as its storage engine, and the master 
+Satellite repository is nothing more then a regular Git repository. Satellite 
+clients are written in "Ruby":http://www.ruby-lang.org/ and utilize the 
+"Mongrel":http://mongrel.rubyforge.org/ web server, so each machine running
+a Satellite client requires Ruby and Mongrel to be installed, as well as a
+password-less method of committing to the master repository.
+
+== Features
+
+* Usual wiki features such as creating, updating, renaming, deleting pages
+* Textile page formatting
+* Easy inter-page linking: {{Page Name}}
+* Automated synchronization & merging between Satellite clients
+* Hotkeys (e for edit)
