@@ -43,7 +43,6 @@ module Satellite
                      }x unless const_defined?(:AUTO_LINK_RE)
   
       PAGE_DIR = 'pages'
-      PAGE_PATH = File.join(Conf::DATA_DIR, PAGE_DIR)
     
       # -----------------------------------------------------------------------
       # class methods
@@ -87,15 +86,12 @@ module Satellite
         def local_filepath(name); File.join(PAGE_DIR, filename(name)); end
 
         # "path/to/pages/foo.textile"
-        def filepath(name); File.join(PAGE_PATH, filename(name)); end
+        def filepath(name); File.join(Conf::DATA_DIR, PAGE_DIR, filename(name)); end
         
         # try to extract the page name from the path
         def parse_name(path)
-          case path
-          when /^([#{VALID_NAME_CHARS}]+)\.textile$/,
-               /^#{PAGE_DIR}\/([#{VALID_NAME_CHARS}]+)\.textile$/,
-               /^#{PAGE_PATH}\/([#{VALID_NAME_CHARS}]+)\.textile$/
-            $1
+          if path =~ /^(.*\/)?([#{VALID_NAME_CHARS}]+)\.textile$/
+            $2
           else
             path
           end

@@ -18,6 +18,6 @@ class Conf
   APP_DIR       = File.join(File.dirname(File.expand_path(__FILE__)), '../')
   TEMPLATE_DIR  = File.join(APP_DIR, 'templates')
 
-  # path of folder to store wiki app content in (this folder will be created)
-  DATA_DIR      = File.join(APP_DIR, 'content')
+  # path of folder to store wiki app data in (this folder will be created)
+  DATA_DIR      = File.join(APP_DIR, 'data')
 end

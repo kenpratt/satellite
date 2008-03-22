@@ -36,7 +36,7 @@ export GIT_DIR="$dest"
 
 # set up dir/permissions
 umask 002
-mkdir "$dest" || die "Failed to create directory '$dest'"
+mkdir -p "$dest" || die "Failed to create directory '$dest'"
 
 # set up group ownership if group name was given
 if [ "$group" ]; then
