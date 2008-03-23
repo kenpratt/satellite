@@ -13,8 +13,20 @@ def controller(*routes)
   c
 end
 
-def log(s)
-  puts s
+def log_level(level)
+  case level
+  when :error : 1
+  when :warn  : 2
+  when :info  : 3
+  when :debug : 4
+  else          5
+  end
+end
+
+def log(level, msg)
+  if (log_level(CONF.log_level) >= log_level(level))
+    puts "[#{level.to_s.upcase}] #{msg}"
+  end
 end
 
 def save_file(input, destination)
@@ -43,14 +55,14 @@ module Framework
   #   controller(*routes) method
   class Controller
     def redirect(uri)
-      log "Redirecting to #{uri}"
+      log :info, "Redirecting to #{uri}"
       @response.start(303) do |head, out|
         head['Location'] = uri
       end
     end
   
     def render(template, context={})
-      log "Rendering #{template}"
+      log :info, "Rendering #{template}"
       @response.start(200) do |head, out|
         head['Content-Type'] = 'text/html'
         inner = process_template(template, context)
@@ -65,6 +77,10 @@ module Framework
   
     def template_path(template)
       File.join(CONF.template_dir, "#{template}.rhtml")
+    end
+    
+    def to_s
+      self.class.to_s
     end
   end
 
@@ -96,10 +112,10 @@ module Framework
       end
     
       def extract_arguments(uri, regex)
-        log "Extracting arguments from '#{uri}'"
-        log "  Attempting to match #{regex}"
+        log :debug, "Extracting arguments from '#{uri}'"
+        log :debug, "  Attempting to match #{regex}"
         if m = regex.match(uri)
-          log "    Found #{m.size - 1} arguments"
+          log :debug, "    Found #{m.size - 1} arguments"
           return m.to_a[1..-1].collect {|a| unescape(a) }
         end
         []
@@ -109,7 +125,7 @@ module Framework
     # add the given controller instances to the routing table
     def add_controllers(controllers)
       @route_map ||= {}
-      log "Router: adding controllers to route map: #{controllers.join(',')}"
+      log :info, "Router: adding controllers to route map: #{controllers.join(',')}"
       controllers.each { |c| c.routes.each {|r| @route_map[r] = c } }
       build_index
     end
@@ -121,15 +137,15 @@ module Framework
   
     # process a given uri, returning the controller instance and extracted uri arguments
     def process(uri)
-      log "Router: attempting to match #{uri}"
+      log :debug, "Router: attempting to match #{uri}"
       @routes.each do |r|
         regex = Router.regex(r)
-        log "  trying #{regex}"
+        log :debug, "  Trying #{regex}"
         if regex.match(uri)
           # route r is correct
           controller = @route_map[r]
           args = Router.extract_arguments(uri, regex)
-          log "    success! controller is #{controller}, args are #{args.join(', ')}"
+          log :debug, "    Success! controller is #{controller}, args are #{args.join(', ')}"
           return controller, args
         end
       end
@@ -148,7 +164,7 @@ module Framework
     def process(request, response)
       begin
         http_method, request_uri = request.params['REQUEST_METHOD'], request.params['REQUEST_URI']
-        log "#{http_method} #{request_uri}"
+        log :info, "#{http_method} #{request_uri}"
         controller, args = @router.process(request_uri)
         
         # TODO instead of injecting instance variables, can we use metaprogramming 
@@ -171,15 +187,14 @@ module Framework
           raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
         end
       rescue Router::NoPathFound
-        log "Error occured: No route found for '#{request_uri}', returning 404."
+        log :warn, "No route found for '#{request_uri}', returning 404."
         response.start(404) do |head, out|
           head['Content-Type'] = 'text/html'
           out.write("<pre>404, baby. aint nothing at '#{request_uri}'</pre>")
         end
       rescue Exception => e
-        log "Error occured:"
-        log "#{e.class}: #{e.message}"
-        log e.backtrace.collect {|s| "        #{s}\n" }.join
+        log :error, "Error occured:\n#{e.class}: #{e.message}\n" + 
+          e.backtrace.collect {|s| sprintf "%8-s\n", s }.join
         response.start(500) do |head, out|
           head['Content-Type'] = 'text/html'
           out.write '<pre>'
@@ -222,7 +237,7 @@ module Framework
       h.register('/', RequestHandler.new(@controller_module))
       h.register('/static', Mongrel::DirHandler.new('static/'))
       h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-      puts "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
+      log :info, "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
       h.run.join
     end
   end

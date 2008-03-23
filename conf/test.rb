@@ -9,3 +9,6 @@ config.data_dir = File.join(config.app_dir, 'tmp/spec_data')
 # user information to use for git content submissions
 config.user_name = 'Ken Pratt'
 config.user_email = 'ken@kenpratt.net'
+
+# logging level (:error, :warn, :info, :debug)
+config.log_level = :debug

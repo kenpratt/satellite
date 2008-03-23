@@ -130,7 +130,7 @@ module Db
         'remote.origin.url' => CONF.master_repository_uri
       }.each do |k, v|
         if (old = @git.config(k)) != v
-          puts "updating configuration: changing #{k} from '#{old}' to '#{v}'"
+          log :info, "Updating configuration: changing #{k} from '#{old}' to '#{v}'"
           @git.config(k, v)
         end
       end
@@ -165,7 +165,6 @@ module Db
     end
     
     def mv(from, to)
-      puts "moving '#{from}' to '#{to}'"
       begin
         FileUtils.mv(File.join(CONF.data_dir, from), File.join(CONF.data_dir, to))
       rescue Errno::ENOENT => e

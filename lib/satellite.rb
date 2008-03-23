@@ -137,7 +137,7 @@ module Satellite
           save_file(@body, filepath)
           Db.save(local_filepath, "Satellite: saving #{name}")
         rescue Db::ContentNotModified
-          log "Didn't need to save #{name}"
+          log :debug, "Page.save(): #{name} wasn't modified since last save"
         end
       end
   
@@ -145,7 +145,6 @@ module Satellite
         old_name = name
         self.name = new_name
         raise ArgumentError.new("New name can't be blank") unless name.any?
-        p "Satellite: renaming #{old_name} to #{name}"
         Db.mv(Page.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
       end
       
