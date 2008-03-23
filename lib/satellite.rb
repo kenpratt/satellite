@@ -1,11 +1,9 @@
-#!/bin/env ruby
-
 # This is the main Satellite app. All business logic is contained here. 
 # - configuration is in config.rb
 # - controller and view framework is in framework.rb
 # - "database" aka Git interface is in db.rb
 
-%w{ config framework db rubygems metaid redcloth open-uri erubis }.each {|l| require l }
+%w{ configuration framework db rubygems metaid redcloth open-uri erubis }.each {|l| require l }
 
 module Satellite
 
@@ -86,7 +84,7 @@ module Satellite
         def local_filepath(name); File.join(PAGE_DIR, filename(name)); end
 
         # "path/to/pages/foo.textile"
-        def filepath(name); File.join(Conf::DATA_DIR, PAGE_DIR, filename(name)); end
+        def filepath(name); File.join(CONF.data_dir, PAGE_DIR, filename(name)); end
         
         # try to extract the page name from the path
         def parse_name(path)
@@ -334,7 +332,7 @@ module Satellite
 
   class << self
     def start
-      Framework::Server.new(Conf::SERVER_IP, Conf::SERVER_PORT, Controllers).start
+      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start
     end
   end
 end

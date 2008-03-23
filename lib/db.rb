@@ -1,7 +1,7 @@
 # This is the "database", which entails a local git repository to store pages 
 # in as well as a master repository to pull changes from and push changes to.
 
-%w{ config rubygems fileutils git }.each {|l| require l }
+%w{ configuration rubygems fileutils git }.each {|l| require l }
 
 # monkey-patch ruby/git bridge to allow listing of unmerged files
 Git::Lib.class_eval do
@@ -33,7 +33,7 @@ module Db
   class MergeConflict < RuntimeError; end
   
   class << self
-
+    
     def sync
       r = open_or_create
       r.pull
@@ -87,28 +87,28 @@ module Db
     # static methods
     class << self
       def open
-        r = Repo.new(Git.open(Conf::DATA_DIR))
+        r = Repo.new(Git.open(CONF.data_dir))
         r.update_config
         r
       end
 
       def clone
         # create data directory
-        FileUtils.mkdir_p(Conf::DATA_DIR)
-        FileUtils.cd(Conf::DATA_DIR)
+        FileUtils.mkdir_p(CONF.data_dir)
+        FileUtils.cd(CONF.data_dir)
 
         # create git repo
         r = Repo.new(Git.init)
 
         # set user params
-        r.config('user.name', Conf::USER_NAME)
-        r.config('user.email', Conf::USER_EMAIL)
+        r.config('user.name', CONF.user_name)
+        r.config('user.email', CONF.user_email)
 
         # convert line endings to LF on commit
         r.config('core.autocrlf', 'input')
 
         # add origin
-        r.add_remote('origin', Conf::ORIGIN_URI)
+        r.add_remote('origin', CONF.master_repository_uri)
 
         # pull down initial content
         r.pull
@@ -125,9 +125,9 @@ module Db
     
     def update_config
       { 
-        'user.name' => Conf::USER_NAME,
-        'user.email' => Conf::USER_EMAIL,
-        'remote.origin.url' => Conf::ORIGIN_URI
+        'user.name' => CONF.user_name,
+        'user.email' => CONF.user_email,
+        'remote.origin.url' => CONF.master_repository_uri
       }.each do |k, v|
         if (old = @git.config(k)) != v
           puts "updating configuration: changing #{k} from '#{old}' to '#{v}'"
@@ -149,8 +149,8 @@ module Db
         when /unable to chdir or not a git archive/
           # remote repo doesn't exist!
           raise ConfigurationError.new("It appears that the remote repository " +
-            "(#{Conf::ORIGIN_URI}) does not exist. Please try running the " +
-            "'create_master_repo' script to create the repository.")
+            "(#{CONF.master_repository_uri}) does not exist. Please try running " +
+            "the 'create_master_repo' script to create the repository.")
         when /Merge conflict/, /You are in the middle of a conflicted merge/
           # someone committed a conflicting change to the remote repository
           raise MergeConflict.new(e.message)
@@ -167,7 +167,7 @@ module Db
     def mv(from, to)
       puts "moving '#{from}' to '#{to}'"
       begin
-        FileUtils.mv(File.join(Conf::DATA_DIR, from), File.join(Conf::DATA_DIR, to))
+        FileUtils.mv(File.join(CONF.data_dir, from), File.join(CONF.data_dir, to))
       rescue Errno::ENOENT => e
         case e.message
         when /No such file or directory/

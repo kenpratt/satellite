@@ -1,6 +1,6 @@
 # This is the framework for controllers and views extracted from Satellite
 
-%w{ config rubygems fileutils mongrel }.each {|l| require l }
+%w{ configuration rubygems fileutils mongrel }.each {|l| require l }
 
 def escape(s); Mongrel::HttpRequest.escape(s); end
 def unescape(s); Mongrel::HttpRequest.unescape(s); end
@@ -64,7 +64,7 @@ module Framework
     end
   
     def template_path(template)
-      File.join(Conf::TEMPLATE_DIR, "#{template}.rhtml")
+      File.join(CONF.template_dir, "#{template}.rhtml")
     end
   end
 
@@ -222,7 +222,7 @@ module Framework
       h.register('/', RequestHandler.new(@controller_module))
       h.register('/static', Mongrel::DirHandler.new('static/'))
       h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-      puts "** #{Conf::APP_NAME} is now running at http://#{@addr}:#{@port}/"
+      puts "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
       h.run.join
     end
   end

@@ -1,21 +1,12 @@
-%w{ config lib }.each {|l| $LOAD_PATH.unshift("#{File.expand_path(File.dirname(__FILE__))}/../#{l}") }
+$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
 
-# make config changes for spec environment
-require 'config'
-
-SPEC_DATA_DIR = File.join(Conf::APP_DIR, 'tmp/spec_data')
-SPEC_MASTER_REPO = File.join(Conf::APP_DIR, 'tmp/spec_master_repo')
-
-# override data dir, so we don't overwrite app data
-Conf::DATA_DIR = SPEC_DATA_DIR
-
-# override app repo, so we don't commit to production
-Conf::ORIGIN_URI = SPEC_MASTER_REPO
-
-if !File.exists?(SPEC_MASTER_REPO)
-  create_script = File.join(Conf::APP_DIR, 'bin/create_master_repo')
-  `#{create_script} #{Conf::ORIGIN_URI}`
-end
-
-# now that config changes have been made, require satellite
 require 'satellite'
+
+# load test config
+CONF = Configuration.load(:test)
+
+# create a master repo for testing, if it doesn't already exist
+if !File.exists?(CONF.master_repository_uri)
+  create_script = File.join(CONF.app_dir, 'bin/create_master_repo')
+  `#{create_script} #{CONF.master_repository_uri}`
+end

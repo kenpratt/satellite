@@ -3,12 +3,17 @@
 # Fix line endings on content pages and add blank line at the end
 #
 
-%w{ config lib }.each {|l| $LOAD_PATH.unshift("#{File.expand_path(File.dirname(__FILE__))}/../#{l}") }
+$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
 
-require 'config'
+require 'configuration'
 
-PAGE_PATH = File.join(Conf::DATA_DIR, 'pages')
+# use production configuration
+CONF = Configuration.load(:production)
 
+# page path should be at data/pages
+PAGE_PATH = File.join(CONF.data_dir, 'pages')
+
+# replace CRLF with LF, add newline at end if needed
 Dir[File.join(PAGE_PATH, "*.textile")].each do |file|
   s = open(file, 'r').read
   s.gsub!(/\r\n/, "\n")

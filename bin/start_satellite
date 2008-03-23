@@ -3,7 +3,12 @@
 # Start Satellite
 #
 
-%w{ config lib }.each {|l| $LOAD_PATH.unshift("#{File.expand_path(File.dirname(__FILE__))}/../#{l}") }
+$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
 
 require 'satellite'
+
+# use production configuration
+CONF = Configuration.load(:production)
+
+# start server
 Satellite.start

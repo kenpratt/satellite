@@ -3,10 +3,14 @@
 # Synchronize Satellite with the master repository
 #
 
-%w{ config lib }.each {|l| $LOAD_PATH.unshift("#{File.expand_path(File.dirname(__FILE__))}/../#{l}") }
+$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
 
 require 'db'
 
+# use production configuration
+CONF = Configuration.load(:production)
+
+# sync to master repository
 begin
   Db.sync
 rescue Db::MergeConflict => e
