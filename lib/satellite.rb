@@ -59,7 +59,7 @@ module Satellite
           if exists?(name)
             Page.new(name, open(filepath(name)).read)
           else
-            nil
+            raise Db::FileNotFound.new("Page #{name} does not exist")
           end
         end
 
