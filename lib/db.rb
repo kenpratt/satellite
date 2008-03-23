@@ -24,6 +24,10 @@ Git::Base.class_eval do
   end
 end
 
+def quote(s)
+  "'#{s}'"
+end
+
 # wrapper for ruby/git bridge
 module Db
   
@@ -53,7 +57,7 @@ module Db
 
     def mv(from, to, message)
       r = open_or_create
-      r.mv(quote(from), quote(to))
+      r.mv(from, to)
       r.commit(message)
     end
     
@@ -67,10 +71,6 @@ module Db
   private
   
   class << self
-    def quote(s)
-      "'#{s}'"
-    end
-  
     def open_or_create
       begin
         Repo.open
@@ -143,7 +143,7 @@ module Db
         @git.pull('origin', 'origin/master', 'pulling from remote repository')
       rescue Git::GitExecuteError => e
         case e.message
-        when /no matching remote head/
+        when /no matching remote head/, /Needed a single revision/
           # a 'no matching remote head' error is returned when the remote repo
           # exists but is currently empty, so we can safely ignore it
         when /unable to chdir or not a git archive/
@@ -170,13 +170,13 @@ module Db
       rescue Errno::ENOENT => e
         case e.message
         when /No such file or directory/
-          raise FileNotFound.new("File '#{from}' does not exist")
+          raise FileNotFound.new("File #{File.join(CONF.data_dir, from)} does not exist")
         else
           raise e
         end
       end
-      @git.add(to)
-      @git.remove(from)
+      @git.add(quote(to))
+      @git.remove(quote(from))
     end
     
     def commit(msg)
