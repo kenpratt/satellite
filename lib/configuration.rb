@@ -13,6 +13,9 @@ class Configuration
   attr_accessor :user_name 
   attr_accessor :user_email
 
+  # time in seconds to wait between attempts to sync with the master repository
+  attr_accessor :sync_frequency
+
   # application paths
   attr_accessor :app_dir
   attr_accessor :conf_dir
@@ -32,6 +35,7 @@ class Configuration
     self.master_repository_uri  = ''
     self.user_name              = ''
     self.user_email             = ''
+    self.sync_frequency         = 60
     self.app_dir                = File.join(File.dirname(File.expand_path(__FILE__)), '../')
     self.conf_dir               = File.join(app_dir, 'conf')
     self.template_dir           = File.join(app_dir, 'templates')
@@ -48,8 +52,9 @@ class Configuration
 
   def to_s
     [
-      :app_name, :server_ip, :server_port, :master_repository_uri, :user_name, 
-      :user_email, :app_dir, :conf_dir, :template_dir, :data_dir, :log_level 
+      :app_name, :server_ip, :server_port, :master_repository_uri, 
+      :sync_frequency, :user_name, :user_email, :app_dir, :conf_dir, 
+      :template_dir, :data_dir, :log_level 
     ].collect do |c|
       sprintf "%12-s => %s", c.to_s, send(c).to_s
     end.join("\n")

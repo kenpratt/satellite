@@ -35,6 +35,7 @@ module Db
   class FileNotFound < RuntimeError; end
   class ContentNotModified < RuntimeError; end
   class MergeConflict < RuntimeError; end
+  class ConnectionFailed < RuntimeError; end
   
   class << self
     
@@ -154,7 +155,11 @@ module Db
         when /Merge conflict/, /You are in the middle of a conflicted merge/
           # someone committed a conflicting change to the remote repository
           raise MergeConflict.new(e.message)
+        when /The remote end hung up unexpectedly/
+          # no internet or bad host address
+          raise ConnectionFailed.new
         else
+          puts "Unexpected error in Db.pull: \"#{e.message}\""
           raise e
         end
       end

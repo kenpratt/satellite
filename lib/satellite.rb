@@ -338,6 +338,30 @@ module Satellite
 
   class << self
     def start
+      # kill the whole server if an unexpected exception is encounted in the sync
+      Thread.abort_on_exception = true
+
+      # spawn thread to sync content with master repository
+      Thread.new do
+        while true
+          log :debug, "Synchronizing with master repository."
+
+          begin
+            Db.sync
+          rescue Db::MergeConflict => e
+            # TODO surface on front-end? already happens on page-load, though?
+            log :warn, "Encountered conflicts during sync. The following files must be merged manually:" + 
+              Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
+          rescue Db::ConnectionFailed
+            log :warn, "Failed to connect to master repository during sync operation."
+          end
+          
+          # sleep until next sync
+          sleep CONF.sync_frequency
+        end
+      end
+      
+      # start server
       Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start
     end
   end

@@ -4,7 +4,9 @@
 
 === Now
 
-* make sync script run persistently (cron/daemon/page request/etc)
+* deploy instance on server
+* code block syntax shortcut
+* code syntax highlighting
 * rspec testing framework
 
 === Soon
@@ -15,8 +17,6 @@
 * page history view
 * revert page to some previous version
 * file uploads
-* code block syntax shortcut
-* code syntax highlighting
 
 === Later?
 
