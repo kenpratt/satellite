@@ -252,7 +252,14 @@ module Satellite
 
     class PageController < controller "/page/#{PAGE_NAME}", "/page/#{PAGE_NAME}/(edit|resolve)"
       def get(name, action='view')
-        page = Models::Page.load(name)
+        # load page
+        begin
+          page = Models::Page.load(name)
+        rescue Db::FileNotFound
+          page = nil
+        end
+
+        # do stuff
         case action
         when 'view'
           if page

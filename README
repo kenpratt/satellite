@@ -22,3 +22,9 @@ password-less method of committing to the master repository.
 * Auto-linking of bare URIs
 * Automated synchronization & merging between Satellite clients
 * Hotkeys (e for edit)
+
+== Installation
+
+$ sudo gem install git metaid erubis
+$ cd path/to/satellite
+$ bin/start_satellite
