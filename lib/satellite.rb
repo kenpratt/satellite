@@ -167,7 +167,9 @@ module Satellite
         str = @body
 
         # code blocks
-        str = str.gsub(/{{{([\S\s]+)}}}/, "<pre><code>$1</code></pre>")
+        str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
+          "<pre><code>#{$1}</code></pre>"
+        end
 
         # wiki linking
         str = str.gsub(WIKI_LINK_FMT) do |s|
