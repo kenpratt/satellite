@@ -165,7 +165,10 @@ module Satellite
     
       def to_html
         str = @body
-      
+
+        # code blocks
+        str = str.gsub(/{{{([\S\s]+)}}}/, "<pre><code>$1</code></pre>")
+
         # wiki linking
         str = str.gsub(WIKI_LINK_FMT) do |s|
           name, uri = $1, Framework::Controller::Uri.page($1)
