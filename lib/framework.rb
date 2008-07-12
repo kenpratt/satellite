@@ -194,7 +194,7 @@ module Framework
         end
       rescue Exception => e
         log :error, "Error occured:\n#{e.class}: #{e.message}\n" + 
-          e.backtrace.collect {|s| sprintf "%8-s\n", s }.join
+          e.backtrace.collect {|s| sprintf "%8s\n", s }.join
         response.start(500) do |head, out|
           head['Content-Type'] = 'text/html'
           out.write '<pre>'

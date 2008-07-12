@@ -34,7 +34,7 @@ module Satellite
                         (?:\.[-\w]+)*            # remaining subdomains or domain
                         (?::\d+)?                # port
                         (?:/(?:(?:[~\w\+@%=-]|(?:[,.;:][^\s$]))+)?)* # path
-                        (?:\?[\w\+@%&=.;-]+)?     # query string
+                        (?:\?[\w\+@%&=.;-]+)?    # query string
                         (?:\#[\w\-]*)?           # trailing anchor
                       )
                       ([[:punct:]]|\s|<|$)       # trailing text
@@ -168,7 +168,11 @@ module Satellite
 
         # code blocks
         str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
-          "<pre><code>#{$1}</code></pre>"
+          if $1 =~ /^\((\w+)\)([\S\s]+)$/
+            "<pre class=\"codeblock lang_#{$1}\"><code>#{$2.strip}</code></pre>"
+          else
+            "<pre class=\"codeblock\"><code>#{$1.strip}</code></pre>"
+          end
         end
 
         # wiki linking
