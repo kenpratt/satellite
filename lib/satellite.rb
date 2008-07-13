@@ -170,12 +170,12 @@ module Satellite
         str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
           code = $1
           if code =~ /^\((\w+)\)([\S\s]+)$/
-            lang, code = $1, $2.strip
-            code = CodeRay.scan(code, lang.to_sym).html.div
-            "<notextile>#{code}</notextile>"
+            lang, code = $1.to_sym, $2.strip
           else
-            "<pre><code>#{code.strip}</code></pre>"
+            lang = :plaintext
           end
+          code = CodeRay.scan(code, lang).html.div
+          "<notextile>#{code}</notextile>"
         end
 
         # wiki linking

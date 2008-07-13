@@ -1,9 +1,11 @@
 .CodeRay {
+  margin: 1em;
   background-color: #f8f8f8;
   border: 1px solid silver;
   font-family: 'Courier New', 'Terminal', monospace;
   color: #100;
 }
+
 .CodeRay pre { margin: 0px }
 
 div.CodeRay { }

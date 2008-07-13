@@ -4,13 +4,12 @@
 
 === Now
 
-* code syntax highlighting
 * rspec testing framework
+* app auto-reloading
+* text search
 
 === Soon
 
-* app auto-reloading
-* text search
 * fix incoming links during rename operations
 * page history view
 * revert page to some previous version
