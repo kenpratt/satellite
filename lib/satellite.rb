@@ -3,7 +3,7 @@
 # - controller and view framework is in framework.rb
 # - "database" aka Git interface is in db.rb
 
-%w{ configuration framework db rubygems metaid redcloth open-uri erubis }.each {|l| require l }
+%w{ configuration framework db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
 
 module Satellite
 
@@ -170,9 +170,11 @@ module Satellite
         str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
           code = $1
           if code =~ /^\((\w+)\)([\S\s]+)$/
-            "<pre class=\"codeblock lang_#{$1}\"><code>#{$2.strip}</code></pre>"
+            lang, code = $1, $2.strip
+            code = CodeRay.scan(code, lang.to_sym).html.div
+            "<notextile>#{code}</notextile>"
           else
-            "<pre class=\"codeblock\"><code>#{code.strip}</code></pre>"
+            "<pre><code>#{code.strip}</code></pre>"
           end
         end
 

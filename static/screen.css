@@ -2,6 +2,7 @@
 @import "lib/reset.css";
 @import "lib/typography.css";
 /*@import "lib/buttons.css";*/
+@import "coderay.css";
 /* End import/hide */
 
 h1, h2, h3, h4, h5 {
