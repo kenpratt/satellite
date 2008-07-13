@@ -168,10 +168,11 @@ module Satellite
 
         # code blocks
         str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
-          if $1 =~ /^\((\w+)\)([\S\s]+)$/
+          code = $1
+          if code =~ /^\((\w+)\)([\S\s]+)$/
             "<pre class=\"codeblock lang_#{$1}\"><code>#{$2.strip}</code></pre>"
           else
-            "<pre class=\"codeblock\"><code>#{$1.strip}</code></pre>"
+            "<pre class=\"codeblock\"><code>#{code.strip}</code></pre>"
           end
         end
 

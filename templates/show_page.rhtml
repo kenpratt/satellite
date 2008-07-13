@@ -1,6 +1,7 @@
 <script type="text/javascript" src="/static/hotkeys.js"></script>
 <script type="text/javascript">
 	HotKeys.add('e', redirect('<%= @uri.edit_page(@page.name) %>'));
+	HotKeys.add('h', redirect('<%= @uri.home %>'));
 	HotKeys.attach();
 </script>
 

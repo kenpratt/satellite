@@ -27,11 +27,19 @@ var HotKeys = {
 
 		// perform action for hotkey
 		if (code) {
-			var key = String.fromCharCode(code).toLowerCase();
+			var key = HotKeys.lookup(code);
 			var func = HotKeys.actions[key];
 			if (func) {
 				func();
 			}
+		}
+	},
+	
+	'lookup': function(code) {
+		if (code == 27) {
+			return 'esc';
+		} else {
+			return String.fromCharCode(code).toLowerCase();
 		}
 	},
 	
