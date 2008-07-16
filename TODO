@@ -4,9 +4,10 @@
 
 === Now
 
-* rspec testing framework
-* app auto-reloading
 * text search
+* deployment script (rake/cap/vlad)
+* app auto-reloading
+* rspec testing framework
 
 === Soon
 
@@ -19,6 +20,6 @@
 
 * prettier web interface for manual conflict resolution
 * user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
-* multiple remote repository support (instead of master/slave)
-* tagging
-* del.icio.us integration
+* peer-to-peer server/repository layout (instead of headless master with running slave servers)
+* page tagging
+* del.icio.us integration (pull up delicious links with same tags)
