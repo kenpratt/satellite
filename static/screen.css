@@ -83,3 +83,21 @@ textarea#content {
 	padding: 1px 18px 1px 0;
 	background: transparent url('arrow_join.png') no-repeat right 0;
 }
+
+.searchresult {
+	margin: 0 0 1em 0;
+}
+.searchresult h4 {
+	margin: 0 0 0.25em 0;
+}
+.searchresult .linenumber {
+	color: #bbb;
+	width: 2em;
+	display: block;
+	float: left;
+	text-align: right;
+	padding: 0 0.5em 0 0;
+}
+.searchresult .match {
+	background: #ffc;
+}

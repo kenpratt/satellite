@@ -6,7 +6,7 @@
 
 * rspec testing framework
 * app auto-reloading
-* text search
+* fork ruby/git instead of monkeypatching
 
 === Soon
 

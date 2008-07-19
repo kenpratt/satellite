@@ -24,6 +24,13 @@ Git::Base.class_eval do
   end
 end
 
+# monkey-patch ruby/git bridge to allow case-insensitive greps
+Git::Base.class_eval do
+  def grep(query, opts = {})
+    self.object('HEAD').grep(query, nil, opts)
+  end
+end
+
 def quote(s)
   "'#{s}'"
 end
@@ -66,6 +73,13 @@ module Db
       r = open_or_create
       r.remove(quote(file))
       r.commit(message)
+    end
+    
+    def search(str)
+      r = open_or_create
+      out = {}
+      r.grep(str, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
+      out
     end
   end
 
