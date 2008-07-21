@@ -137,8 +137,13 @@ module Framework
   
     # process a given uri, returning the controller instance and extracted uri arguments
     def process(uri)
-      log :debug, "Checking if app needs to be reloaded"
-      RELOADER.reload_app
+      # check if necessary to auto-reload app on each request (if turned on in config)
+      if CONF.auto_reload
+        log :debug, "Checking if app needs to be reloaded"
+        RELOADER.reload_app
+      end
+
+      # routing
       log :debug, "Router: attempting to match #{uri}"
       @routes.each do |r|
         regex = Router.regex(r)

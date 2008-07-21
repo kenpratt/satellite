@@ -15,7 +15,6 @@
 * page history view
 * revert page to some previous version
 * file uploads
-* no app auto-reloading in production mode
 
 === Later?
 

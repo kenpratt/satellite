@@ -4,16 +4,21 @@
 #
 
 # add library directory to load path
-$LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
+LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), '../lib')
+$LOAD_PATH.unshift(LIBDIR)
 
-require 'reloader'
-
-# turn on app auto-reloading
-app_path = File.join(File.expand_path(File.dirname(__FILE__)), '../lib/satellite.rb')
-RELOADER = Framework::Reloader.new(app_path)
-
-# use production configuration
+# load production configuration
+require 'configuration'
 CONF = Configuration.load(:production)
+
+if CONF.auto_reload
+  # turn on app auto-reloading
+  require 'reloader'
+  RELOADER = Framework::Reloader.new(File.join(LIBDIR, 'satellite.rb'))
+else
+  # no auto-reloading
+  require 'satellite'
+end
 
 # start server
 Satellite.start
