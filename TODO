@@ -5,8 +5,9 @@
 === Now
 
 * rspec testing framework
-* app auto-reloading
 * fork ruby/git instead of monkeypatching
+* search box on all pages
+* hotkey 's' to jump to search box
 
 === Soon
 
@@ -14,6 +15,7 @@
 * page history view
 * revert page to some previous version
 * file uploads
+* no app auto-reloading in production mode
 
 === Later?
 
