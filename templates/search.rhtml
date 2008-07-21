@@ -1,0 +1,19 @@
+<form id="search" action="<%= @uri.search %>" method="get">
+	<input id="query" name="query" size="20" value="<%= @query %>" />
+	<button type="submit">Search</button>
+</form>
+<br/>
+
+<% if @results %>
+  <% for page in @results.keys.sort %>
+    <div class="searchresult">
+      <h4><a href="<%= @uri.page(page.name) %>"><%= page.name %></a></h4>
+        <% @results[page].each do |line,str| %>
+          <div>
+          <span class="linenumber"><%= line %>:</span>
+          <%= str.gsub(/(#{@query})/i, '<span class="match">\1</span>') %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
