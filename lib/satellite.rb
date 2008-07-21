@@ -15,31 +15,8 @@ module Satellite
     # Git repository which is mirrored to a master repository
     class Page
       include Comparable
-    
+
       VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
-      WIKI_LINK_FMT = /\{\{([#{VALID_NAME_CHARS}]+)\}\}/
-      
-      AUTO_LINK_RE = %r{
-                      (                          # leading text
-                        <\w+.*?>|                # leading HTML tag, or
-                        [^=!:'"/]|               # leading punctuation, or 
-                        ^                        # beginning of line
-                      )
-                      (
-                        (?:https?://)|           # protocol spec, or
-                        (?:www\.)                # www.*
-                      ) 
-                      (
-                        [-\w]+                   # subdomain or domain
-                        (?:\.[-\w]+)*            # remaining subdomains or domain
-                        (?::\d+)?                # port
-                        (?:/(?:(?:[~\w\+@%=-]|(?:[,.;:][^\s$]))+)?)* # path
-                        (?:\?[\w\+@%&=.;-]+)?    # query string
-                        (?:\#[\w\-]*)?           # trailing anchor
-                      )
-                      ([[:punct:]]|\s|<|$)       # trailing text
-                     }x unless const_defined?(:AUTO_LINK_RE)
-  
       PAGE_DIR = 'pages'
     
       # -----------------------------------------------------------------------
@@ -51,6 +28,19 @@ module Satellite
           Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
         end
         
+        def search(query)
+          out = {}
+          Db.search(query).each do |file,matches|
+            page = Page.new(parse_name(file))
+            out[page] = matches.collect do |line,text|
+              text = WikiMarkup.process(text)
+              text.gsub!(/<\/?[^>]*>/, '')
+              [line, text]
+            end
+          end
+          out
+        end
+
         def conflicts
           Db.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
         end
@@ -164,58 +154,13 @@ module Satellite
       end
     
       def to_html
-        str = @body
-
-        # code blocks
-        str = str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
-          code = $1
-          if code =~ /^\((\w+)\)([\S\s]+)$/
-            lang, code = $1.to_sym, $2.strip
-          else
-            lang = :plaintext
-          end
-          code = CodeRay.scan(code, lang).html.div
-          "<notextile>#{code}</notextile>"
-        end
-
-        # wiki linking
-        str = str.gsub(WIKI_LINK_FMT) do |s|
-          name, uri = $1, Framework::Controller::Uri.page($1)
-          notextile do
-            if Page.exists?(name)
-              "<a href=\"#{uri}\">#{name}</a>"
-            else
-              "<span class=\"nonexistant\">#{name}<a href=\"#{uri}\">?</a></span>"
-            end 
-          end
-        end
-      
-        # textile -> html filtering
-        html = RedCloth.new(str).to_html
-        
-        # auto-linking
-        html = html.gsub(AUTO_LINK_RE) do
-          all, a, b, c, d = $&, $1, $2, $3, $4
-          if a =~ /<a\s/i # don't replace URL's that are already linked
-            all
-          else
-            "#{a}<a href=\"#{ b == 'www.' ? 'http://www.' : b }#{c}\">#{b + c}</a>#{d}"
-          end
-        end
-        
-        html
+        WikiMarkup.process(@body)
       end
   
       def filename; Page.filename(name); end
       def local_filepath; Page.local_filepath(name); end
       def filepath; Page.filepath(name); end
     
-      # helper to wrap wrap block in notextile tags (block should return html string)
-      def notextile
-        str = yield
-        "<notextile>#{str.to_s}</notextile>" if str && str.any?
-      end
-
     private
 
       def name=(name)
@@ -224,13 +169,108 @@ module Satellite
         @name = name
       end
     end
+
+    # all the wiki markup stuff should go in here
+    class WikiMarkup
+      WIKI_LINK_FMT = /\{\{([#{Page::VALID_NAME_CHARS}]+)\}\}/
+
+      AUTO_LINK_RE = %r{
+                      (                          # leading text
+                        <\w+.*?>|                # leading HTML tag, or
+                        [^=!:'"/]|               # leading punctuation, or
+                        ^                        # beginning of line
+                      )
+                      (
+                        (?:https?://)|           # protocol spec, or
+                        (?:www\.)                # www.*
+                      )
+                      (
+                        [-\w]+                   # subdomain or domain
+                        (?:\.[-\w]+)*            # remaining subdomains or domain
+                        (?::\d+)?                # port
+                        (?:/(?:(?:[~\w\+@%=-]|(?:[,.;:][^\s$]))+)?)* # path
+                        (?:\?[\w\+@%&=.;-]+)?    # query string
+                        (?:\#[\w\-]*)?           # trailing anchor
+                      )
+                      ([[:punct:]]|\s|<|$)       # trailing text
+                     }x unless const_defined?(:AUTO_LINK_RE)
+
+      class << self
+        def process(str)
+          str = process_code_blocks(str)
+          str = process_wiki_links(str)
+          str = textile_to_html(str)
+          str = autolink(str)
+          str
+        end
+
+      private
+
+        # code blocks are like so (where lang is ruby/html/java/c/etc):
+        # {{{(lang)
+        # @foo = 'bar'
+        # }}}
+        def process_code_blocks(str)
+          str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
+            code = $1
+            if code =~ /^\((\w+)\)([\S\s]+)$/
+              lang, code = $1.to_sym, $2.strip
+            else
+              lang = :plaintext
+            end
+            code = CodeRay.scan(code, lang).html.div
+            "<notextile>#{code}</notextile>"
+          end
+        end
+
+        # wiki links are like so: {{Another Page}}
+        def process_wiki_links(str)
+          str.gsub(WIKI_LINK_FMT) do |s|
+            name, uri = $1, Framework::Controller::Uri.page($1)
+            notextile do
+              if Page.exists?(name)
+                "<a href=\"#{uri}\">#{name}</a>"
+              else
+                "<span class=\"nonexistant\">#{name}<a href=\"#{uri}\">?</a></span>"
+              end
+            end
+          end
+        end
+
+        # helper to wrap wrap block in notextile tags (block should return html string)
+        def notextile
+          str = yield
+          "<notextile>#{str.to_s}</notextile>" if str && str.any?
+        end
+
+        # textile -> html filtering
+        def textile_to_html(str)
+          RedCloth.new(str).to_html
+        end
+
+        # auto-link web addresses in plain text
+        def autolink(str)
+          str.gsub(AUTO_LINK_RE) do
+            all, a, b, c, d = $&, $1, $2, $3, $4
+            if a =~ /<a\s/i # don't replace URL's that are already linked
+              all
+            else
+              "#{a}<a href=\"#{ b == 'www.' ? 'http://www.' : b }#{c}\">#{b + c}</a>#{d}"
+            end
+          end
+        end
+      end
+    end
   end
 
   # controllers definitions go here
   module Controllers
-    
+
     VALID_PAGE_NAME_CHARS = '\w \+\%\-\.'
     PAGE_NAME = "([#{VALID_PAGE_NAME_CHARS}]+)"
+
+    VALID_SEARCH_STRING_CHARS = '0-9a-zA-Z\+\%\`\~\!\^\*\(\)\_\-\[\]\{\}\\\|\'\"\.\<\>'
+    SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
 
     # reopen framework controller class to provide some app-specific logic
     class Framework::Controller
@@ -253,6 +293,7 @@ module Satellite
           def new_page() '/new' end
           def list() '/list' end
           def home() '/page/Home' end
+          def search() '/search' end
         end
       end
     end
@@ -344,6 +385,18 @@ module Satellite
     class ListController < controller '/list'
       def get
         render 'list_pages', 'All pages', :pages => Models::Page.list
+      end
+    end
+
+    class SearchController < controller '/search', "/search\\?query=#{SEARCH_STRING}"
+      def get(query=nil)
+        if query
+          log :debug, "searched for: #{query}"
+          results = Models::Page.search(query)
+          render 'search', "Searched for: #{query}", :query => query, :results => results
+        else
+          render 'search', 'Search'
+        end
       end
     end
   end

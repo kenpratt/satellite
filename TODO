@@ -4,10 +4,12 @@
 
 === Now
 
-* text search
-* deployment script (rake/cap/vlad)
-* app auto-reloading
 * rspec testing framework
+* fork ruby/git instead of monkeypatching it
+* search box on all pages
+* hotkey 's' to jump to search box
+* set up deployment (rake/capistrano/vlad)
+* make a logo! (and a favicon to match)
 
 === Soon
 
@@ -15,11 +17,14 @@
 * page history view
 * revert page to some previous version
 * file uploads
+* switch from direct mongrel inheritance to rack adapter
 
 === Later?
 
+* console that loads app + irb
 * prettier web interface for manual conflict resolution
 * user system/password protection? (but need db, cookies, etc, maybe just use httpauth)
-* peer-to-peer server/repository layout (instead of headless master with running slave servers)
-* page tagging
-* del.icio.us integration (pull up delicious links with same tags)
+* multiple remote repository support (instead of master/slave)
+* tagging
+* del.icio.us integration
+

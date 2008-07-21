@@ -9,3 +9,6 @@ config.user_email = 'ken@kenpratt.net'
 
 # logging level (:error, :warn, :info, :debug)
 config.log_level = :debug
+
+# automatically reload app when app files change? (for development)
+config.auto_reload = true
