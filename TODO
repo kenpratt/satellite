@@ -4,6 +4,8 @@
 
 === Now
 
+* file upload is missing close icon -- figure out how to get it back
+* clean up/integrate file uploads
 * rspec testing framework
 * fork ruby/git instead of monkeypatching it
 * search box on all pages
