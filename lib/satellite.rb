@@ -399,6 +399,15 @@ module Satellite
         end
       end
     end
+    
+    class UploadController < controller '/upload'
+      def post
+        puts "hello from upload controller"
+        puts @input
+        save_file(@input['Filedata'][:tempfile], 'tmp/uploads/' + @input['Filedata'][:filename])
+        respond "thanks!"
+      end
+    end
   end
 
   class << self
