@@ -1,11 +1,11 @@
 # This is the framework for controllers and views extracted from Satellite
 
-%w{ configuration rubygems fileutils mongrel }.each {|l| require l }
+%w{ configuration rubygems fileutils tempfile mongrel }.each {|l| require l }
 
 def escape(s); Mongrel::HttpRequest.escape(s); end
 def unescape(s); Mongrel::HttpRequest.unescape(s); end
 
-# never subclass Controller directly! instead, use this method which creates a 
+# never subclass Controller directly! instead, use this method which creates a
 # subclass with embedded route information
 def controller(*routes)
   c = Class.new(Framework::Controller)
@@ -30,6 +30,8 @@ def log(level, msg)
 end
 
 def save_file(input, destination)
+  log :debug, "Saving #{input} to #{destination}"
+  
   # create the destination directory if it doesn't already exist
   dir = File.dirname(destination)
   FileUtils.mkdir_p(dir) unless File.exists?(dir)
@@ -60,7 +62,7 @@ module Framework
         head['Location'] = uri
       end
     end
-  
+
     def render(template, context={})
       log :info, "Rendering #{template}"
       @response.start(200) do |head, out|
@@ -70,25 +72,33 @@ module Framework
         out.write process_template('structure', context)
       end
     end
-  
+    
+    def respond(str, code=200)
+      log :info, "Responding with '#{code}: #{str}'"
+      @response.start(code) do |head, out|
+        head['Content-Type'] = 'text/plain'
+        out.write str
+      end
+    end
+
     def process_template(template, context)
       Erubis::Eruby.new(open(template_path(template)).read).evaluate(context)
     end
-  
+
     def template_path(template)
       File.join(CONF.template_dir, "#{template}.rhtml")
     end
-    
+
     def to_s
       self.class.to_s
     end
   end
 
-  # router class 
+  # router class
   # - handlers all the request routing and argument parsing
   class Router
     class NoPathFound < RuntimeError; end
-  
+
     def initialize(controller_module)
       add_controllers(Router.find_controllers(controller_module))
     end
@@ -106,11 +116,11 @@ module Framework
           c.kind_of? Controller
         end
       end
-    
+
       def regex(route)
-        /^#{route}\/?$/
+        /^#{route}\/?\??$/
       end
-    
+
       def extract_arguments(uri, regex)
         log :debug, "Extracting arguments from '#{uri}'"
         log :debug, "  Attempting to match #{regex}"
@@ -134,7 +144,7 @@ module Framework
     def build_index
       @routes = @route_map.keys.sort
     end
-  
+
     # process a given uri, returning the controller instance and extracted uri arguments
     def process(uri)
       # check if necessary to auto-reload app on each request (if turned on in config)
@@ -158,7 +168,7 @@ module Framework
       end
       raise NoPathFound
     end
-  
+
   end
 
   # request handler
@@ -173,23 +183,33 @@ module Framework
         http_method, request_uri = request.params['REQUEST_METHOD'], request.params['REQUEST_URI']
         log :info, "#{http_method} #{request_uri}"
         controller, args = @router.process(request_uri)
-        
-        # TODO instead of injecting instance variables, can we use metaprogramming 
+
+        # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have response and input as args?
-        
+
         # inject the response object
         controller.instance_variable_set("@response", response)
-        
+
         case http_method.upcase
         when 'GET'
           # call controller get method
           controller.get(*args)
         when 'POST'
-          # inject input object
-          controller.instance_variable_set("@input", hashify(io_to_string(request.body)))
-        
-          # call controller post method
-          controller.post(*args)
+          begin
+            if upload_data = process_file_upload(request)
+              # inject input object
+              controller.instance_variable_set("@input", upload_data)
+            else
+              # inject input object
+              controller.instance_variable_set("@input", hashify(io_to_string(request.body)))
+            end
+
+            # call controller post method
+            controller.post(*args)
+          rescue RuntimeError => e
+            log :debug, "Encountered runtime error in POST processing -- returning 500\n#{e.to_s}"
+            controller.respond(e.to_s, 500)
+          end
         else
           raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
         end
@@ -200,7 +220,7 @@ module Framework
           out.write("<pre>404, baby. aint nothing at '#{request_uri}'</pre>")
         end
       rescue Exception => e
-        log :error, "Error occured:\n#{e.class}: #{e.message}\n" + 
+        log :error, "Error occured:\n#{e.class}: #{e.message}\n" +
           e.backtrace.collect {|s| sprintf "%8s\n", s }.join
         response.start(500) do |head, out|
           head['Content-Type'] = 'text/html'
@@ -211,8 +231,9 @@ module Framework
         end
       end
     end
-  
+
     def hashify(str, hash={})
+      puts "hashifying string: #{str}"
       (str || '').split(/[&;] */n).each { |f| hash.store(*unescape(f).split('=', 2)) }
       hash
     end
@@ -228,8 +249,74 @@ module Framework
         raise ArgumentError.new("don't know how to read a #{input.class}")
       end
     end
+
+  private
+
+    # process file uploads
+    # this method is borrowed from Camping (but modified to not rely on camping libs)
+    #
+    # Copyright (c) 2006 why the lucky stiff
+    #
+    # Permission is hereby granted, free of charge, to any person obtaining a copy
+    # of this software and associated documentation files (the "Software"), to
+    # deal in the Software without restriction, including without limitation the
+    # rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    # sell copies of the Software, and to permit persons to whom the Software is
+    # furnished to do so, subject to the following conditions:
+    #
+    # The above copyright notice and this permission notice shall be included in
+    # all copies or substantial portions of the Software.
+    #
+    # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    # THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+    # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+    # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    def process_file_upload(request)
+      qs = {}
+      @in = request.body
+      if %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)|n.match(request.params['CONTENT_TYPE'])
+        b = /(?:\r?\n|\A)#{Regexp::quote("--#$1")}(?:--)?\r$/
+        until @in.eof?
+          fh={}
+          for l in @in
+            case l
+            when "\r\n": break
+            when /^Content-Disposition: form-data;/
+              $'.scan(/(?:\s(\w+)="([^"]+)")/).each do |key,value|
+                fh[key.to_sym] = value
+              end
+            when /^Content-Type: (.+?)(\r$|\Z)/m
+              log :info, "=> fh[type] = #$1"
+              fh[:type] = $1
+            end
+          end
+          fn=fh[:name]
+          o=if fh[:filename]
+            o=fh[:tempfile]=Tempfile.new(:C)
+            o.binmode
+          else
+            fh=""
+          end
+          while l=@in.read(16384)
+            if l=~b
+              o<<$`.chomp
+              @in.seek(-$'.size,IO::SEEK_CUR)
+              break
+            end
+            o<<l
+          end
+          qs[fn]=fh if fn
+          fh[:tempfile].rewind if fh.is_a? Hash
+        end
+        qs
+      else
+        nil
+      end
+    end
   end
-  
+
   # server
   # - defines a mongrel http server for the app
   # - static requests are handled by mongrel
@@ -238,12 +325,13 @@ module Framework
     def initialize(addr, port, controller_module)
       @addr, @port, @controller_module = addr, port, controller_module
     end
-  
+
     def start
       h = Mongrel::HttpServer.new(@addr, @port)
       h.register('/', RequestHandler.new(@controller_module))
       h.register('/static', Mongrel::DirHandler.new('static/'))
       h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
+      yield(h)
       log :info, "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
       h.run.join
     end
