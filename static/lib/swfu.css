@@ -4,75 +4,73 @@
 	Updated on:  May 1, 2008
 ----------------------------------------------- */
 
-
 /* remember to define focus styles! */
 :focus { outline: 0; }
 
-
 /* -- Form Styles ------------------------------- */
-fieldset {
+#upload_form fieldset {
 	border:  1px solid #afe14c;
 	margin: 5px 0;
 	padding: 20px 10px;
 }
 
 /* IE6 FIX */
-html fieldset { 
+html #upload_form fieldset { 
 	position: relative; 
 	margin-top:1em;  
 }
 /* IE6 FIX */
-html legend { 
+html #upload_form legend { 
 	position:absolute; 
 	top: -0.5em; 
 	left: .5em; 
 }
 
-fieldset.flash {
+#upload_form fieldset.flash {
 	width: 375px;
 	margin: 10px 5px;
 	border-color: #D9E4FF;
 }
 
-legend {
+#upload_form legend {
 	font: 700 14px Arial, Helvetica, sans-serif;
 	padding: 0 5px;
 	margin: 0 10px;
 	color: #73b304;
 }
 
-button,
-input,
-select,
-textarea { 
+#upload_form button,
+#upload_form input,
+#upload_form select,
+#upload_form textarea { 
 	border-width: 1px; 
 	margin-bottom: 10px;
 	padding: 2px 3px;
 }
 
-input[disabled]{ border: 1px solid #ccc } /* FF 2 Fix */
+#upload_form input[disabled]{ border: 1px solid #ccc } /* FF 2 Fix */
 
-label { 
+#upload_form label { 
 	width: 150px; 
 	text-align: right; 
 	display:block;
 	margin-right: 5px;
 }
 
-#btnSubmit { margin: 0 0 0 155px ; }
+#upload_form #btnSubmit { margin: 0 0 0 155px ; }
 
 /* -- Table Styles ------------------------------- */
-td {
+#upload_form td {
 	font: 10pt Helvetica, Arial, sans-serif;
 	vertical-align: top;
 }
 
-.progressWrapper {
+#upload_form .progressWrapper {
 	width: 357px;
 	overflow: hidden;
 }
 
-.progressContainer {
+#upload_form .progressContainer {
 	margin: 5px;
 	padding: 4px;
 	border: solid 1px #E8E8E8;
@@ -80,7 +78,7 @@ td {
 	overflow: hidden;
 }
 /* Message */
-.message {
+#upload_form .message {
 	margin: 1em 0;
 	padding: 10px 20px;
 	border: solid 1px #FFDD99;
@@ -88,24 +86,24 @@ td {
 	overflow: hidden;
 }
 /* Error */
-.red {
+#upload_form .red {
 	border: solid 1px #B50000;
 	background-color: #FFEBEB;
 }
 
 /* Current */
-.green {
+#upload_form .green {
 	border: solid 1px #DDF0DD;
 	background-color: #EBFFEB;
 }
 
 /* Complete */
-.blue {
+#upload_form .blue {
 	border: solid 1px #CEE2F2;
 	background-color: #F0F5FF;
 }
 
-.progressName {
+#upload_form .progressName {
 	font-size: 8pt;
 	font-weight: 700;
 	color: #555;
@@ -116,9 +114,9 @@ td {
 	overflow: hidden;
 }
 
-.progressBarInProgress,
-.progressBarComplete,
-.progressBarError {
+#upload_form .progressBarInProgress,
+#upload_form .progressBarComplete,
+#upload_form .progressBarError {
 	font-size: 0;
 	width: 0%;
 	height: 2px;
@@ -126,19 +124,19 @@ td {
 	margin-top: 2px;
 }
 
-.progressBarComplete {
+#upload_form .progressBarComplete {
 	width: 100%;
 	background-color: green;
 	visibility: hidden;
 }
 
-.progressBarError {
+#upload_form .progressBarError {
 	width: 100%;
 	background-color: red;
 	visibility: hidden;
 }
 
-.progressBarStatus {
+#upload_form .progressBarStatus {
 	margin-top: 2px;
 	width: 337px;
 	font-size: 7pt;
@@ -147,17 +145,17 @@ td {
 	white-space: nowrap;
 }
 
-a.progressCancel {
+#upload_form a.progressCancel {
 	font-size: 0;
 	display: block;
 	height: 14px;
 	width: 14px;
-	background-image: url(../images/cancelbutton.gif);
+	background-image: url(../cancelbutton.gif);
 	background-repeat: no-repeat;
 	background-position: -14px 0px;
 	float: right;
 }
 
-a.progressCancel:hover {
+#upload_form a.progressCancel:hover {
 	background-position: 0px 0px;
 }

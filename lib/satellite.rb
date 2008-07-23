@@ -277,7 +277,8 @@ module Satellite
       # pass title and uri mappings into templates too
       alias :original_render :render
       def render(template, title, params={})
-        common_params = { :title => title, :uri => Uri, :conflicts => Satellite::Models::Page.conflicts }
+        common_params = { :title => title, :uri => Uri, :conf => CONF,
+          :conflicts => Satellite::Models::Page.conflicts }
         original_render(template, params.merge!(common_params))
       end
 
@@ -402,10 +403,9 @@ module Satellite
     
     class UploadController < controller '/upload'
       def post
-        puts "hello from upload controller"
-        puts @input
+        log :debug, "upload: #{@upload}"
         save_file(@input['Filedata'][:tempfile], 'tmp/uploads/' + @input['Filedata'][:filename])
-        respond "thanks!"
+        respond "Thanks!"
       end
     end
   end

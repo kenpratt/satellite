@@ -71,9 +71,9 @@ module Framework
       end
     end
     
-    def respond(str)
-      log :info, "Responding with '#{str}'"
-      @response.start(200) do |head, out|
+    def respond(str, code=200)
+      log :info, "Responding with '#{code}: #{str}'"
+      @response.start(code) do |head, out|
         head['Content-Type'] = 'text/plain'
         out.write str
       end
@@ -193,16 +193,21 @@ module Framework
           # call controller get method
           controller.get(*args)
         when 'POST'
-          if upload_data = process_file_upload(request)
-            # inject input object
-            controller.instance_variable_set("@input", upload_data)
-          else
-            # inject input object
-            controller.instance_variable_set("@input", hashify(io_to_string(request.body)))
-          end
+          begin
+            if upload_data = process_file_upload(request)
+              # inject input object
+              controller.instance_variable_set("@input", upload_data)
+            else
+              # inject input object
+              controller.instance_variable_set("@input", hashify(io_to_string(request.body)))
+            end
 
-          # call controller post method
-          controller.post(*args)
+            # call controller post method
+            controller.post(*args)
+          rescue RuntimeError => e
+            log :debug, "Encountered runtime error in POST processing -- returning 500\n#{e.to_s}"
+            controller.respond(e.to_s, 500)
+          end
         else
           raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
         end
