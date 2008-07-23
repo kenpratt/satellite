@@ -4,22 +4,22 @@
 
 === Now
 
-* file upload is missing close icon -- figure out how to get it back
-* clean up/integrate file uploads
-* rspec testing framework
-* fork ruby/git instead of monkeypatching it
+* hide file upload box by default (link to unhide)
+* hotkey 'u' to open upload box
 * search box on all pages
 * hotkey 's' to jump to search box
+* rspec testing framework
+* fork ruby/git instead of monkeypatching it
 * set up deployment (rake/capistrano/vlad)
 * make a logo! (and a favicon to match)
 
 === Soon
 
-* fix incoming links during rename operations
+* allow deletion of uploads
+* allow renaming of uploads?
+* fix incoming links during page rename operations
 * page history view
 * revert page to some previous version
-* file uploads
-* switch from direct mongrel inheritance to rack adapter
 
 === Later?
 
@@ -30,3 +30,4 @@
 * tagging
 * del.icio.us integration
 * set up satellite-wiki.com
+* switch from direct mongrel inheritance to rack adapter?
