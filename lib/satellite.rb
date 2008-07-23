@@ -9,21 +9,90 @@ module Satellite
 
   # model definitions go here
   module Models
+    PAGE_DIR = 'pages'
+    UPLOAD_DIR = 'uploads'
 
-    # "Page" is a model representing a wiki page
-    # Pages are saved locally in the filesystem, changes are committed to a local
-    # Git repository which is mirrored to a master repository
-    class Page
-      include Comparable
-
+    # "Hunk" is a model representing a file stored in the backend.
+    # Hunks are saved locally in the filesystem, changes are committed to a
+    # local Git repository which is mirrored to a master repository.
+    # "Pages" and "Uploads" are types of Hunks.
+    class Hunk
       VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
-      PAGE_DIR = 'pages'
-    
+
       # -----------------------------------------------------------------------
       # class methods
       # -----------------------------------------------------------------------
 
       class << self
+        
+        def valid_name?(name)
+          name =~ /^[#{VALID_NAME_CHARS}]*$/
+        end
+
+        def exists?(name)
+          File.exists?(filepath(name))
+        end
+
+        # "foo.ext" (just the name by default)
+        def filename(name); name; end
+        
+        # "pages/foo.ext"
+        def local_filepath(name); File.join(content_dir, filename(name)); end
+
+        # "path/to/pages/foo.ext"
+        def filepath(name); File.join(CONF.data_dir, content_dir, filename(name)); end
+        
+      end
+      
+      # -----------------------------------------------------------------------
+      # instance methods
+      # -----------------------------------------------------------------------
+      
+      def klass
+        self.class
+      end
+
+      def name
+        @name
+      end
+      
+      # name= method is private (see below)
+
+      def save(input)
+        begin
+          raise ArgumentError.new("Saved name can't be blank") unless name.any?
+          save_file(input, filepath)
+          Db.save(local_filepath, "Satellite: saving #{name}")
+        rescue Db::ContentNotModified
+          log :debug, "Hunk.save(): #{name} wasn't modified since last save"
+        end
+      end
+
+      def filename; klass.filename(name); end
+      def local_filepath; klass.local_filepath(name); end
+      def filepath; klass.filepath(name); end
+
+    private
+
+      def name=(name)
+        name.strip!
+        raise ArgumentError.new("Name is invalid: #{name}") unless klass.valid_name?(name)
+        @name = name
+      end
+
+    end
+
+    # "Page" is a Hunk representing a wiki page
+    class Page < Hunk
+      include Comparable
+
+      # -----------------------------------------------------------------------
+      # class methods
+      # -----------------------------------------------------------------------
+
+      class << self
+        def content_dir; PAGE_DIR; end
+
         def list
           Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
         end
@@ -53,14 +122,6 @@ module Satellite
           end
         end
 
-        def exists?(name)
-          File.exists?(filepath(name))
-        end
-        
-        def valid_name?(name)
-          name =~ /^[#{VALID_NAME_CHARS}]*$/
-        end
-        
         def rename(old_name, new_name)
           page = load(old_name)
           page.rename(new_name) if page
@@ -69,12 +130,6 @@ module Satellite
 
         # "foo.textile"
         def filename(name); "#{name}.textile"; end
-        
-        # "pages/foo.textile"
-        def local_filepath(name); File.join(PAGE_DIR, filename(name)); end
-
-        # "path/to/pages/foo.textile"
-        def filepath(name); File.join(CONF.data_dir, PAGE_DIR, filename(name)); end
         
         # try to extract the page name from the path
         def parse_name(path)
@@ -94,12 +149,6 @@ module Satellite
         self.name = name
         self.body = body
       end
-      
-      def name
-        @name
-      end
-      
-      # name= method is private (see below)
 
       def body(format=nil)
         case format
@@ -121,14 +170,9 @@ module Satellite
         @body = str
       end
   
+      alias :original_save :save
       def save
-        begin
-          raise ArgumentError.new("Saved name can't be blank") unless name.any?
-          save_file(@body, filepath)
-          Db.save(local_filepath, "Satellite: saving #{name}")
-        rescue Db::ContentNotModified
-          log :debug, "Page.save(): #{name} wasn't modified since last save"
-        end
+        original_save(@body)
       end
   
       def rename(new_name)
@@ -156,23 +200,33 @@ module Satellite
       def to_html
         WikiMarkup.process(@body)
       end
-  
-      def filename; Page.filename(name); end
-      def local_filepath; Page.local_filepath(name); end
-      def filepath; Page.filepath(name); end
+    end
     
-    private
+    # "Upload" is a Hunk representing an uploaded file
+    class Upload < Hunk
 
-      def name=(name)
-        name.strip!
-        raise ArgumentError.new("Name is invalid: #{name}") unless Page.valid_name?(name)
-        @name = name
+      # -----------------------------------------------------------------------
+      # class methods
+      # -----------------------------------------------------------------------
+
+      class << self
+        def content_dir; UPLOAD_DIR; end
       end
+
+      # -----------------------------------------------------------------------
+      # instance methods
+      # -----------------------------------------------------------------------
+
+      def initialize(name='')
+        self.name = name
+      end
+
     end
 
     # all the wiki markup stuff should go in here
     class WikiMarkup
-      WIKI_LINK_FMT = /\{\{([#{Page::VALID_NAME_CHARS}]+)\}\}/
+      WIKI_LINK_FMT = /\{\{([#{Hunk::VALID_NAME_CHARS}]+)\}\}/
+      UPLOAD_LINK_FMT = /\{\{upload:([#{Hunk::VALID_NAME_CHARS}]+)\}\}/
 
       AUTO_LINK_RE = %r{
                       (                          # leading text
@@ -224,8 +278,18 @@ module Satellite
         end
 
         # wiki links are like so: {{Another Page}}
+        # uploads are like: {{upload:foo.ext}}
         def process_wiki_links(str)
-          str.gsub(WIKI_LINK_FMT) do |s|
+          str.gsub(UPLOAD_LINK_FMT) do |s|
+            name, uri = $1, Framework::Controller::Uri.upload($1)
+            notextile do
+              if Upload.exists?(name)
+                "<a href=\"#{uri}\">#{name}</a>"
+              else
+                "<span class=\"nonexistant\">#{name}</span>"
+              end
+            end
+          end.gsub(WIKI_LINK_FMT) do |s|
             name, uri = $1, Framework::Controller::Uri.page($1)
             notextile do
               if Page.exists?(name)
@@ -266,8 +330,8 @@ module Satellite
   # controllers definitions go here
   module Controllers
 
-    VALID_PAGE_NAME_CHARS = '\w \+\%\-\.'
-    PAGE_NAME = "([#{VALID_PAGE_NAME_CHARS}]+)"
+    VALID_NAME_CHARS = '\w \+\%\-\.'
+    NAME = "([#{VALID_NAME_CHARS}]+)"
 
     VALID_SEARCH_STRING_CHARS = '0-9a-zA-Z\+\%\`\~\!\^\*\(\)\_\-\[\]\{\}\\\|\'\"\.\<\>'
     SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
@@ -295,6 +359,14 @@ module Satellite
           def list() '/list' end
           def home() '/page/Home' end
           def search() '/search' end
+          def upload(name) "/upload/#{escape(name)}" end
+          def upload_file(page_name=nil) 
+            if page_name
+              "/page/#{escape(page_name)}/upload"
+            else
+              "/upload"
+            end
+          end
         end
       end
     end
@@ -304,7 +376,7 @@ module Satellite
       def post; redirect Uri.home; end
     end
 
-    class PageController < controller "/page/#{PAGE_NAME}", "/page/#{PAGE_NAME}/(edit|resolve)"
+    class PageController < controller "/page/#{NAME}", "/page/#{NAME}/(edit|resolve)"
       def get(name, action='view')
         # load page
         begin
@@ -358,7 +430,7 @@ module Satellite
       end
     end
     
-    class RenamePageController < controller "/page/#{PAGE_NAME}/rename"
+    class RenamePageController < controller "/page/#{NAME}/rename"
       def get(name)
         page = Models::Page.load(name)
         render 'rename_page', "Renaming #{page.name}", :page => page
@@ -370,7 +442,7 @@ module Satellite
       end
     end
 
-    class DeletePageController < controller "/page/#{PAGE_NAME}/delete"
+    class DeletePageController < controller "/page/#{NAME}/delete"
       def get(name)
         page = Models::Page.load(name)
         render 'delete_page', "Deleting #{page.name}", :page => page
@@ -401,10 +473,32 @@ module Satellite
       end
     end
     
+    class PageUploadController < controller "/page/#{NAME}/upload"
+      def post(name)
+        log :debug, "Uploaded: #{@input}"
+        filename = @input['Filedata'][:filename].strip
+        
+        # save upload
+        upload = Models::Upload.new(filename)
+        upload.save(@input['Filedata'][:tempfile])
+        
+        # add upload to current page
+        page = Models::Page.load(name)
+        page.body += "\n\n* {{upload:#{upload.name}}}"
+        page.save
+        
+        respond "Thanks!"
+      end
+    end
+    
     class UploadController < controller '/upload'
+
+      # no get() required -- files are served up directly by Mongrel
+
       def post
-        log :debug, "upload: #{@upload}"
-        save_file(@input['Filedata'][:tempfile], 'tmp/uploads/' + @input['Filedata'][:filename])
+        log :debug, "Uploaded: #{@input}"
+        upload = Models::Upload.new(@input['Filedata'][:filename].strip)
+        upload.save(@input['Filedata'][:tempfile])
         respond "Thanks!"
       end
     end
@@ -436,7 +530,9 @@ module Satellite
       end
       
       # start server
-      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start
+      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start do |h|
+        h.register('/upload', Mongrel::DirHandler.new(File.join(CONF.data_dir, Models::UPLOAD_DIR)))
+      end
     end
   end
 end

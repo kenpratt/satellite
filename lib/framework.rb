@@ -30,6 +30,8 @@ def log(level, msg)
 end
 
 def save_file(input, destination)
+  log :debug, "Saving #{input} to #{destination}"
+  
   # create the destination directory if it doesn't already exist
   dir = File.dirname(destination)
   FileUtils.mkdir_p(dir) unless File.exists?(dir)
@@ -329,6 +331,7 @@ module Framework
       h.register('/', RequestHandler.new(@controller_module))
       h.register('/static', Mongrel::DirHandler.new('static/'))
       h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
+      yield(h)
       log :info, "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
       h.run.join
     end

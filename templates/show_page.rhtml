@@ -13,9 +13,14 @@
 	var swfu;
 
 	window.onload = function() {
+	  localQueueComplete = function(numFilesUploaded) {
+	    queueComplete(numFilesUploaded);
+	    window.location = "<%= @uri.page(@page.name) %>";
+	  };
+	  
 		swfu = new SWFUpload({
 			flash_url : "/static/lib/swfupload_f8.swf",
-			upload_url: "/upload",	// Relative to the SWF file
+			upload_url: "<%= @uri.upload_file(@page.name) %>",
 			file_size_limit : "<%= @conf.max_upload_filesize %> MB",
 			file_types : "*.*",
 			file_types_description : "All Files",
@@ -36,7 +41,7 @@
 			upload_error_handler : uploadError,
 			upload_success_handler : uploadSuccess,
 			upload_complete_handler : uploadComplete,
-			queue_complete_handler : queueComplete	// Queue plugin event
+			queue_complete_handler : localQueueComplete	// Queue plugin event
 		});
   };
 </script>
@@ -48,13 +53,13 @@
 	<a href="<%= @uri.delete_page(@page.name) %>">Delete</a>
 </p>
 
-<form id="upload_form" action="http://www.swfupload.org/upload.php" method="post" enctype="multipart/form-data">
-		<fieldset class="flash" id="fsUploadProgress">
+<form id="upload_form" action="<%= @uri.upload_file(@page.name) %>" method="post" enctype="multipart/form-data">
+	<fieldset class="flash" id="fsUploadProgress">
 		<legend>Upload</legend>
-		</fieldset>
+	</fieldset>
 	<div id="divStatus">0 Files Uploaded</div>
-		<div>
-			<input type="button" value="Upload file (Max <%= @conf.max_upload_filesize %> MB)" onclick="swfu.selectFiles()" style="font-size: 8pt;" />
-			<input id="btnCancel" type="button" value="Cancel All Uploads" onclick="swfu.cancelQueue();" disabled="disabled" style="font-size: 8pt;" />
-		</div>
+	<div>
+		<input type="button" value="Upload file (Max <%= @conf.max_upload_filesize %> MB)" onclick="swfu.selectFiles()" style="font-size: 8pt;" />
+		<input id="btnCancel" type="button" value="Cancel All Uploads" onclick="swfu.cancelQueue();" disabled="disabled" style="font-size: 8pt;" />
+	</div>
 </form>
