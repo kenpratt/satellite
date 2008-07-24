@@ -35,6 +35,13 @@ h1, h2, h3, h4, h5 {
   padding: 1em;
 }
 
+#search-box {
+  float: right;
+}
+#search-box label, #search-box input {
+  font-size: 85%;
+}
+
 #new-page #name, #rename-page #new_name {
   font-size: 170%;
   font-weight: bold;
@@ -53,7 +60,7 @@ li {
 }
 
 textarea#content {
-  width: 90%;
+  width: 99.7%;
 }
 
 .conflicts {

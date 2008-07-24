@@ -4,8 +4,6 @@
 
 === Now
 
-* search box on all pages
-* hotkey 's' to jump to search box
 * rspec testing framework
 * fork ruby/git instead of monkeypatching it
 * set up deployment (rake/capistrano/vlad)

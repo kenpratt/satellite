@@ -23,6 +23,9 @@
 	  
 	  // h => redirect to Home
     HotKeys.add('h', redirect('<%= @uri.home %>'));
+
+    // s => focus search box
+    HotKeys.add('s', function() { document.getElementById('search-box-query').focus(); return false; });
     
     HotKeys.attach();
   };
@@ -35,6 +38,13 @@
 		</div>
 
 		<div id="content-box">
+		  <div id="search-box">
+  		  <form id="searchBox" action="<%= @uri.search %>" method="get">
+  		    <label for="search-box-query">Search:</label>
+        	<input id="search-box-query" name="query" size="20" value="" />
+        </form>
+      </div>
+      
 			<% if @error %><p class="error"><%= @error %></p><% end %>
 			<% if @conflicts.any? %>
 				<div class="conflicts">
