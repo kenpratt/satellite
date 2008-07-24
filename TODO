@@ -4,8 +4,6 @@
 
 === Now
 
-* hide file upload box by default (link to unhide)
-* hotkey 'u' to open upload box
 * search box on all pages
 * hotkey 's' to jump to search box
 * rspec testing framework

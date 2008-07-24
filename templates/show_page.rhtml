@@ -1,9 +1,4 @@
 <script type="text/javascript" src="/static/hotkeys.js"></script>
-<script type="text/javascript">
-	HotKeys.add('e', redirect('<%= @uri.edit_page(@page.name) %>'));
-	HotKeys.add('h', redirect('<%= @uri.home %>'));
-	HotKeys.attach();
-</script>
 
 <script type="text/javascript" src="/static/lib/swfupload.js"></script>
 <script type="text/javascript" src="/static/lib/swfupload.queue.js"></script>
@@ -13,6 +8,11 @@
 	var swfu;
 
 	window.onload = function() {
+
+    showFileUploadForm = function() {
+      document.getElementById('file_upload').style.display='';
+    };
+
 	  localQueueComplete = function(numFilesUploaded) {
 	    queueComplete(numFilesUploaded);
 	    window.location = "<%= @uri.page(@page.name) %>";
@@ -43,6 +43,11 @@
 			upload_complete_handler : uploadComplete,
 			queue_complete_handler : localQueueComplete	// Queue plugin event
 		});
+
+    HotKeys.add('e', redirect('<%= @uri.edit_page(@page.name) %>'));
+    HotKeys.add('h', redirect('<%= @uri.home %>'));
+    HotKeys.add('u', function() { showFileUploadForm(); swfu.selectFiles(); });
+    HotKeys.attach();
   };
 </script>
 
@@ -50,16 +55,19 @@
 <p>
 	<a href="<%= @uri.edit_page(@page.name) %>">Edit</a> |
 	<a href="<%= @uri.rename_page(@page.name) %>">Rename</a> |
-	<a href="<%= @uri.delete_page(@page.name) %>">Delete</a>
+	<a href="<%= @uri.delete_page(@page.name) %>">Delete</a> |
+	<a href="#" onclick="showFileUploadForm(); return false;">Upload a file</a>
 </p>
 
-<form id="upload_form" action="<%= @uri.upload_file(@page.name) %>" method="post" enctype="multipart/form-data">
-	<fieldset class="flash" id="fsUploadProgress">
-		<legend>Upload</legend>
-	</fieldset>
-	<div id="divStatus">0 Files Uploaded</div>
-	<div>
-		<input type="button" value="Upload file (Max <%= @conf.max_upload_filesize %> MB)" onclick="swfu.selectFiles()" style="font-size: 8pt;" />
-		<input id="btnCancel" type="button" value="Cancel All Uploads" onclick="swfu.cancelQueue();" disabled="disabled" style="font-size: 8pt;" />
-	</div>
-</form>
+<div id="file_upload" style="display:none">
+  <form id="upload_form" action="<%= @uri.upload_file(@page.name) %>" method="post" enctype="multipart/form-data">
+  	<fieldset class="flash" id="fsUploadProgress">
+  		<legend>Upload</legend>
+  	</fieldset>
+  	<div id="divStatus">0 Files Uploaded</div>
+  	<div>
+  		<input type="button" value="Upload file (Max <%= @conf.max_upload_filesize %> MB)" onclick="swfu.selectFiles()" style="font-size: 8pt;" />
+  		<input id="btnCancel" type="button" value="Cancel All Uploads" onclick="swfu.cancelQueue();" disabled="disabled" style="font-size: 8pt;" />
+  	</div>
+  </form>
+</div>

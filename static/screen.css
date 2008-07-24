@@ -102,3 +102,9 @@ textarea#content {
 .searchresult .match {
 	background: #ffc;
 }
+
+#file_upload {
+	border: 1px solid #ccc;
+	margin: 1em;
+	padding: 1em;
+}
