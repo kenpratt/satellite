@@ -1,17 +1,17 @@
-/* -------------------------------------------------------------- 
-  
+/* --------------------------------------------------------------
+
    Buttons.css
    * Gives you some great buttons for many purposes.
-   
+
    Created by Kevin Hale [particletree.com]
    * particletree.com/features/rediscovering-the-button-element
-   
-   W3C: "Buttons created with the BUTTON element function 
-   just like buttons created with the INPUT element, 
+
+   W3C: "Buttons created with the BUTTON element function
+   just like buttons created with the INPUT element,
    but they offer richer rendering possibilities."
-   
+
    Usage:
-   
+
    <button type="submit" class="button positive">
      <img src="css/blueprint/lib/img/icons/tick.png" alt=""/> Save
    </button>
@@ -23,8 +23,8 @@
    <a href="#" class="button negative">
      <img src="css/blueprint/lib/img/icons/cross.png" alt=""/> Cancel
    </a>
-   
-   
+
+
 -------------------------------------------------------------- */
 
 a.button, button {
@@ -32,7 +32,7 @@ a.button, button {
   float:left;
   margin:0 0.583em 0.667em 0;
   padding:5px 10px 6px 7px;   /* Links */
-  
+
   border:0.1em solid #dedede;
   border-top:0.1em solid #eee;
   border-left:0.1em solid #eee;

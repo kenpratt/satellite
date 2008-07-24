@@ -31,7 +31,7 @@ end
 
 def save_file(input, destination)
   log :debug, "Saving #{input} to #{destination}"
-  
+
   # create the destination directory if it doesn't already exist
   dir = File.dirname(destination)
   FileUtils.mkdir_p(dir) unless File.exists?(dir)
@@ -72,7 +72,7 @@ module Framework
         out.write process_template('structure', context)
       end
     end
-    
+
     def respond(str, code=200)
       log :info, "Responding with '#{code}: #{str}'"
       @response.start(code) do |head, out|

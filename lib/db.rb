@@ -1,4 +1,4 @@
-# This is the "database", which entails a local git repository to store pages 
+# This is the "database", which entails a local git repository to store pages
 # in as well as a master repository to pull changes from and push changes to.
 
 %w{ configuration rubygems fileutils git }.each {|l| require l }
@@ -37,21 +37,21 @@ end
 
 # wrapper for ruby/git bridge
 module Db
-  
+
   class ConfigurationError < RuntimeError; end
   class FileNotFound < RuntimeError; end
   class ContentNotModified < RuntimeError; end
   class MergeConflict < RuntimeError; end
   class ConnectionFailed < RuntimeError; end
-  
+
   class << self
-    
+
     def sync
       r = open_or_create
       r.pull
       r.push
     end
-    
+
     def conflicts
       r = open_or_create
       r.ls_unmerged_files.keys
@@ -68,7 +68,7 @@ module Db
       r.mv(from, to)
       r.commit(message)
     end
-    
+
     def rm(file, message)
       r = open_or_create
       r.remove(quote(file))
@@ -84,7 +84,7 @@ module Db
   end
 
   private
-  
+
   class << self
     def open_or_create
       begin
@@ -95,7 +95,7 @@ module Db
       end
     end
   end
-  
+
   # private inner class that encapsulates Git operations
   class Repo
 
@@ -137,9 +137,9 @@ module Db
     def initialize(git_instance)
       @git = git_instance
     end
-    
+
     def update_config
-      { 
+      {
         'user.name' => CONF.user_name,
         'user.email' => CONF.user_email,
         'remote.origin.url' => CONF.master_repository_uri
@@ -150,10 +150,10 @@ module Db
         end
       end
     end
-    
+
     def pull
       begin
-        # the documentation claims that the second argument should just be 
+        # the documentation claims that the second argument should just be
         # 'master', but that doesn't seem to work
         @git.pull('origin', 'origin/master', 'pulling from remote repository')
       rescue Git::GitExecuteError => e
@@ -178,11 +178,11 @@ module Db
         end
       end
     end
-    
+
     def add(file)
       @git.add(file)
     end
-    
+
     def mv(from, to)
       begin
         FileUtils.mv(File.join(CONF.data_dir, from), File.join(CONF.data_dir, to))
@@ -197,7 +197,7 @@ module Db
       @git.add(quote(to))
       @git.remove(quote(from))
     end
-    
+
     def commit(msg)
       begin
         @git.commit(msg)
@@ -210,7 +210,7 @@ module Db
         end
       end
     end
-    
+
     def method_missing(name, *args)
       if @git.respond_to?(name)
         @git.send(name, *args)

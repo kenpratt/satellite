@@ -1,16 +1,16 @@
 <script type="text/javascript">
   localOnload = function() {
-    // esc => cancel edit 
+    // esc => cancel edit
     // TODO doesn't work (at least not in ff3)
-  	HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
-  	
-  	// c => cancel edit
-  	HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
+    HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
+
+    // c => cancel edit
+    HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
   };
 </script>
 
 <form action="<%= @uri.page(@page.name) %>" method="post">
-	<textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
-	<button type="submit">Save</button>
-	or <a href="<%= @uri.page(@page.name) %>">Cancel</a>
+  <textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
+  <button type="submit">Save</button>
+  or <a href="<%= @uri.page(@page.name) %>">Cancel</a>
 </form>

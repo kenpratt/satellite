@@ -13,17 +13,17 @@ die() { echo "Error: $*"; usage; exit 1; }
 group=
 dest=
 set -- `getopt g:h "$@"`
-[ $# -lt 1 ] && exit 1	# getopt failed
+[ $# -lt 1 ] && exit 1  # getopt failed
 while [ $# -gt 0 ]
 do
-	case "$1" in
-		-g)	group="$2"; shift;;
-		--)	shift; break;;
-		-h) usage; exit 1;;
-		-*) usage; exit 1;;
-		*)  break;;
-	esac
-	shift
+  case "$1" in
+    -g)  group="$2"; shift;;
+    --)  shift; break;;
+    -h) usage; exit 1;;
+    -*) usage; exit 1;;
+    *)  break;;
+  esac
+  shift
 done
 dest="$@"
 
@@ -40,7 +40,7 @@ mkdir -p "$dest" || die "Failed to create directory '$dest'"
 
 # set up group ownership if group name was given
 if [ "$group" ]; then
-	chgrp "$group" "$dest" || die "Failed to give ownership to group '$group'"
+  chgrp "$group" "$dest" || die "Failed to give ownership to group '$group'"
 fi
 
 # set up permissions
@@ -48,9 +48,9 @@ chmod 2775 "$dest" || die "Failed to set up permissions"
 
 # initialize repo
 if [ "$group" ]; then
-	git-init --shared=group || die "Failed to initialize the repository"
+  git-init --shared=group || die "Failed to initialize the repository"
 else
-	git-init || die "Failed to initialize the repository"
+  git-init || die "Failed to initialize the repository"
 fi
 
 # enable commit hooks

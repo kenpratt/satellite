@@ -18,62 +18,62 @@
 <script type="text/javascript">
   localOnload = function() {}; // override on pages
 
-	window.onload = function() {
-	  localOnload();
-	  
-	  // h => redirect to Home
+  window.onload = function() {
+    localOnload();
+
+    // h => redirect to Home
     HotKeys.add('h', redirect('<%= @uri.home %>'));
 
     // s => focus search box
     HotKeys.add('s', function() { document.getElementById('search-box-query').focus(); return false; });
-    
+
     HotKeys.attach();
   };
 </script>
 </head>
 <body>
-	<div id="wrapper">
-		<div id="header">
-			<h1><a href="/"><span>Satellite</span></a></h1>
-		</div>
+  <div id="wrapper">
+    <div id="header">
+      <h1><a href="/"><span>Satellite</span></a></h1>
+    </div>
 
-		<div id="content-box">
-		  <div id="search-box">
-  		  <form id="searchBox" action="<%= @uri.search %>" method="get">
-  		    <label for="search-box-query">Search:</label>
-        	<input id="search-box-query" name="query" size="20" value="" />
+    <div id="content-box">
+      <div id="search-box">
+        <form id="searchBox" action="<%= @uri.search %>" method="get">
+          <label for="search-box-query">Search:</label>
+          <input id="search-box-query" name="query" size="20" value="" />
         </form>
       </div>
-      
-			<% if @error %><p class="error"><%= @error %></p><% end %>
-			<% if @conflicts.any? %>
-				<div class="conflicts">
-					<h4>Warning</h4>
-					<p>
-						Conflicts occurred during the last sync operation. Please
-						resolve the following pages as soon as possible:
-					</p>
-					<ul>
-						<% for page in @conflicts %>
-							<li><a href="<%= @uri.resolve_conflict(page.name) %>">Resolve '<%= page.name %>'</a></li>
-						<% end %>
-					</ul>
-				</div>
-			<% end %>
-			
-			<h2><%= @title %></h2>
-			
-			<%= @inner %>
-		</div>
 
-		<div id="footer-box">
-			<div id="menu">
-				<a href="<%= @uri.home %>">Home</a> |
-				<a href="<%= @uri.new_page %>">Add page</a> |
-				<a href="<%= @uri.list %>">All pages</a> |
-				<a href="<%= @uri.search %>">Search</a>
-			</div>
-		</div>
-	</div>
+      <% if @error %><p class="error"><%= @error %></p><% end %>
+      <% if @conflicts.any? %>
+        <div class="conflicts">
+          <h4>Warning</h4>
+          <p>
+            Conflicts occurred during the last sync operation. Please
+            resolve the following pages as soon as possible:
+          </p>
+          <ul>
+            <% for page in @conflicts %>
+              <li><a href="<%= @uri.resolve_conflict(page.name) %>">Resolve '<%= page.name %>'</a></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <h2><%= @title %></h2>
+
+      <%= @inner %>
+    </div>
+
+    <div id="footer-box">
+      <div id="menu">
+        <a href="<%= @uri.home %>">Home</a> |
+        <a href="<%= @uri.new_page %>">Add page</a> |
+        <a href="<%= @uri.list %>">All pages</a> |
+        <a href="<%= @uri.search %>">Search</a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# This is the main Satellite app. All business logic is contained here. 
+# This is the main Satellite app. All business logic is contained here.
 # - configuration is in config.rb
 # - controller and view framework is in framework.rb
 # - "database" aka Git interface is in db.rb
@@ -24,7 +24,7 @@ module Satellite
       # -----------------------------------------------------------------------
 
       class << self
-        
+
         def valid_name?(name)
           name =~ /^[#{VALID_NAME_CHARS}]*$/
         end
@@ -35,19 +35,19 @@ module Satellite
 
         # "foo.ext" (just the name by default)
         def filename(name); name; end
-        
+
         # "pages/foo.ext"
         def local_filepath(name); File.join(content_dir, filename(name)); end
 
         # "path/to/pages/foo.ext"
         def filepath(name); File.join(CONF.data_dir, content_dir, filename(name)); end
-        
+
       end
-      
+
       # -----------------------------------------------------------------------
       # instance methods
       # -----------------------------------------------------------------------
-      
+
       def klass
         self.class
       end
@@ -55,7 +55,7 @@ module Satellite
       def name
         @name
       end
-      
+
       # name= method is private (see below)
 
       def save(input)
@@ -96,7 +96,7 @@ module Satellite
         def list
           Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
         end
-        
+
         def search(query)
           out = {}
           Db.search(query).each do |file,matches|
@@ -113,7 +113,7 @@ module Satellite
         def conflicts
           Db.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
         end
-        
+
         def load(name)
           if exists?(name)
             Page.new(name, open(filepath(name)).read)
@@ -130,7 +130,7 @@ module Satellite
 
         # "foo.textile"
         def filename(name); "#{name}.textile"; end
-        
+
         # try to extract the page name from the path
         def parse_name(path)
           if path =~ /^(.*\/)?([#{VALID_NAME_CHARS}]+)\.textile$/
@@ -140,7 +140,7 @@ module Satellite
           end
         end
       end
-  
+
       # -----------------------------------------------------------------------
       # instance methods
       # -----------------------------------------------------------------------
@@ -158,34 +158,34 @@ module Satellite
           @body
         end
       end
-      
+
       def body=(str='')
         if str.any?
           # fix line endings coming from browser
           str.gsub!(/\r\n/, "\n")
-        
+
           # end page with newline if it doesn't have one
           str += "\n" unless str[-1..-1] == "\n"
         end
         @body = str
       end
-  
+
       alias :original_save :save
       def save
         original_save(@body)
       end
-  
+
       def rename(new_name)
         old_name = name
         self.name = new_name
         raise ArgumentError.new("New name can't be blank") unless name.any?
         Db.mv(Page.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
       end
-      
+
       def delete!
         Db.rm(local_filepath, "Satellite: deleting #{name}")
       end
-    
+
       # sort home above other pages, otherwise alphabetical order
       def <=>(other)
         if name == 'Home'
@@ -196,12 +196,12 @@ module Satellite
           name <=> other.name
         end
       end
-    
+
       def to_html
         WikiMarkup.process(@body)
       end
     end
-    
+
     # "Upload" is a Hunk representing an uploaded file
     class Upload < Hunk
 
@@ -360,7 +360,7 @@ module Satellite
           def home() '/page/Home' end
           def search() '/search' end
           def upload(name) "/upload/#{escape(name)}" end
-          def upload_file(page_name=nil) 
+          def upload_file(page_name=nil)
             if page_name
               "/page/#{escape(page_name)}/upload"
             else
@@ -406,7 +406,7 @@ module Satellite
           raise RuntimeError.new("PageController does not support the '#{action}' action.")
         end
       end
-  
+
       def post(name, action=nil)
         page = Models::Page.new(name, @input['content'])
         page.save
@@ -418,7 +418,7 @@ module Satellite
       def get
         render 'new_page', 'Add page', :page => Models::Page.new
       end
-  
+
       def post
         page = Models::Page.new(@input['name'].strip, @input['content'])
         unless Models::Page.exists?(page.name)
@@ -429,13 +429,13 @@ module Satellite
         end
       end
     end
-    
+
     class RenamePageController < controller "/page/#{NAME}/rename"
       def get(name)
         page = Models::Page.load(name)
         render 'rename_page', "Renaming #{page.name}", :page => page
       end
-      
+
       def post(name)
         page = Models::Page.rename(name, @input['new_name'].strip)
         redirect Uri.page(page.name)
@@ -447,7 +447,7 @@ module Satellite
         page = Models::Page.load(name)
         render 'delete_page', "Deleting #{page.name}", :page => page
       end
-      
+
       def post(name)
         page = Models::Page.load(name)
         page.delete!
@@ -472,25 +472,25 @@ module Satellite
         end
       end
     end
-    
+
     class PageUploadController < controller "/page/#{NAME}/upload"
       def post(name)
         log :debug, "Uploaded: #{@input}"
         filename = @input['Filedata'][:filename].strip
-        
+
         # save upload
         upload = Models::Upload.new(filename)
         upload.save(@input['Filedata'][:tempfile])
-        
+
         # add upload to current page
         page = Models::Page.load(name)
         page.body += "\n\n* {{upload:#{upload.name}}}"
         page.save
-        
+
         respond "Thanks!"
       end
     end
-    
+
     class UploadController < controller '/upload'
 
       # no get() required -- files are served up directly by Mongrel
@@ -518,17 +518,17 @@ module Satellite
             Db.sync
           rescue Db::MergeConflict => e
             # TODO surface on front-end? already happens on page-load, though?
-            log :warn, "Encountered conflicts during sync. The following files must be merged manually:" + 
+            log :warn, "Encountered conflicts during sync. The following files must be merged manually:" +
               Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
           rescue Db::ConnectionFailed
             log :warn, "Failed to connect to master repository during sync operation."
           end
-          
+
           # sleep until next sync
           sleep CONF.sync_frequency
         end
       end
-      
+
       # start server
       Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start do |h|
         h.register('/upload', Mongrel::DirHandler.new(File.join(CONF.data_dir, Models::UPLOAD_DIR)))
