@@ -57,54 +57,54 @@ textarea#content {
 }
 
 .conflicts {
-	width: 80em;
-	margin: 0 auto 1em 0;
-	padding: 0;
-	border: 3px solid #c00;
+  width: 80em;
+  margin: 0 auto 1em 0;
+  padding: 0;
+  border: 3px solid #c00;
 }
 
 .conflicts h4 {
-	background: #c00 url('error.png') no-repeat 2px 2px;
-	color: #fff;
-	margin: 0;
-	padding: 1px 0 0 20px;
+  background: #c00 url('error.png') no-repeat 2px 2px;
+  color: #fff;
+  margin: 0;
+  padding: 1px 0 0 20px;
 }
 
 .conflicts p {
-	background: #c00;
-	color: #fff;
-	margin: 0;
-	padding: 0.5em 0.5em 0.5em 1.0em;
+  background: #c00;
+  color: #fff;
+  margin: 0;
+  padding: 0.5em 0.5em 0.5em 1.0em;
 }
 
 .conflicts ul {
-	margin: 1em;
+  margin: 1em;
 }
 .conflicts ul li a {
-	padding: 1px 18px 1px 0;
-	background: transparent url('arrow_join.png') no-repeat right 0;
+  padding: 1px 18px 1px 0;
+  background: transparent url('arrow_join.png') no-repeat right 0;
 }
 
 .searchresult {
-	margin: 0 0 1em 0;
+  margin: 0 0 1em 0;
 }
 .searchresult h4 {
-	margin: 0 0 0.25em 0;
+  margin: 0 0 0.25em 0;
 }
 .searchresult .linenumber {
-	color: #bbb;
-	width: 2em;
-	display: block;
-	float: left;
-	text-align: right;
-	padding: 0 0.5em 0 0;
+  color: #bbb;
+  width: 2em;
+  display: block;
+  float: left;
+  text-align: right;
+  padding: 0 0.5em 0 0;
 }
 .searchresult .match {
-	background: #ffc;
+  background: #ffc;
 }
 
 #file_upload {
-	border: 1px solid #ccc;
-	margin: 1em;
-	padding: 1em;
+  border: 1px solid #ccc;
+  margin: 1em;
+  padding: 1em;
 }
