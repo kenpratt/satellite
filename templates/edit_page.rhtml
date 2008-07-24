@@ -1,9 +1,12 @@
-<script type="text/javascript" src="/static/hotkeys.js"></script>
 <script type="text/javascript">
-	HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
-	HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
-	HotKeys.add('h', redirect('<%= @uri.home %>'));
-	HotKeys.attach();
+  localOnload = function() {
+    // esc => cancel edit 
+    // TODO doesn't work (at least not in ff3)
+  	HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
+  	
+  	// c => cancel edit
+  	HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
+  };
 </script>
 
 <form action="<%= @uri.page(@page.name) %>" method="post">

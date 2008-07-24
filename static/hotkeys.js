@@ -44,7 +44,7 @@ var HotKeys = {
 	},
 	
 	'attach': function() {
-	  attachListener(document, 'keydown', HotKeys.listener);
+	  attachListener(document, 'keypress', HotKeys.listener);
 	}
 };
 
