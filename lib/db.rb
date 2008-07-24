@@ -151,6 +151,21 @@ module Db
       end
     end
 
+    def push
+      begin
+        @git.push
+      rescue Git::GitExecuteError => e
+        case e.message
+        when /The remote end hung up unexpectedly/
+          # no internet or bad host address
+          raise ConnectionFailed.new
+        else
+          puts "Unexpected error in Db.push: \"#{e.message}\""
+          raise e
+        end
+      end
+    end
+
     def pull
       begin
         # the documentation claims that the second argument should just be
