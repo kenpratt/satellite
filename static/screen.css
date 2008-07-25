@@ -4,6 +4,7 @@
 /*@import "lib/buttons.css";*/
 @import "coderay.css";
 @import "lib/swfu.css";
+@import "lib/jquery-autocomplete/jquery.autocomplete.css";
 /* End import/hide */
 
 h1, h2, h3, h4, h5 {

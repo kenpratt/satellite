@@ -342,7 +342,7 @@ module Satellite
       alias :original_render :render
       def render(template, title, params={})
         common_params = { :title => title, :uri => Uri, :conf => CONF,
-          :conflicts => Satellite::Models::Page.conflicts }
+          :pages => Models::Page.list, :conflicts => Models::Page.conflicts }
         original_render(template, params.merge!(common_params))
       end
 
@@ -457,7 +457,7 @@ module Satellite
 
     class ListController < controller '/list'
       def get
-        render 'list_pages', 'All pages', :pages => Models::Page.list
+        render 'list_pages', 'All pages'
       end
     end
 
