@@ -1,13 +1,4 @@
-<script type="text/javascript">
-  localOnload = function() {
-    // esc => cancel delete
-    // TODO doesn't work in firefox (ironically, works in IE)
-    HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
-
-    // c => cancel delete
-    HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
-  };
-</script>
+<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.page(@page.name) } %>
 
 <form id="delete-page" action="<%= @uri.delete_page(@page.name) %>" method="post">
   <p>You're sure?</p>

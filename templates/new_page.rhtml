@@ -1,13 +1,4 @@
-<script type="text/javascript">
-  localOnload = function() {
-    // esc => cancel create
-    // TODO doesn't work in firefox (ironically, works in IE)
-    HotKeys.add('esc', redirect('<%= @uri.home %>'));
-
-    // c => cancel create
-    HotKeys.add('c', redirect('<%= @uri.home %>'));
-  };
-</script>
+<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.home } %>
 
 <form id="new-page" action="<%= @uri.new_page %>" method="post">
   <input id="name" name="name" size="20" value="<%= @page.name %>" /><br />
