@@ -6,6 +6,17 @@
   var swfu;
 
   localOnload = function() {
+    // e => edit page
+    hotkey('e', redirect('<%= @uri.edit_page(@page.name) %>'));
+
+    // r => rename page
+    hotkey('r', redirect('<%= @uri.rename_page(@page.name) %>'));
+
+    // d => delete page
+    hotkey('d', redirect('<%= @uri.delete_page(@page.name) %>'));
+
+    // u => open file upload dialog
+    hotkey('u', function() { showFileUploadForm(); swfu.selectFiles(); });
 
     showFileUploadForm = function() {
       document.getElementById('file_upload').style.display='';
@@ -41,18 +52,6 @@
       upload_complete_handler : uploadComplete,
       queue_complete_handler : localQueueComplete  // Queue plugin event
     });
-
-    // e => edit page
-    HotKeys.add('e', redirect('<%= @uri.edit_page(@page.name) %>'));
-
-    // r => rename page
-    HotKeys.add('r', redirect('<%= @uri.rename_page(@page.name) %>'));
-
-    // d => delete page
-    HotKeys.add('d', redirect('<%= @uri.delete_page(@page.name) %>'));
-
-    // u => open file upload dialog
-    HotKeys.add('u', function() { showFileUploadForm(); swfu.selectFiles(); });
   };
 </script>
 

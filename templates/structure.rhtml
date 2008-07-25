@@ -15,32 +15,34 @@
 <link rel="shortcut icon" href="/favicon.ico" />
 
 <script type="text/javascript" src="/static/lib/jquery-1.2.6.min.js"></script>
+<script type="text/javascript" src="/static/lib/jquery.hotkeys.js"></script>
 <script type="text/javascript" src="/static/lib/jquery-autocomplete/jquery.autocomplete.min.js"></script>
-<script type="text/javascript" src="/static/hotkeys.js"></script>
 
 <script type="text/javascript">
-  localOnload = function() {}; // override on pages
+  localOnload = function() {}; // placeholder for page-specific logic -- override in each page
 
+  hotkey = function(key, action) { jQuery.hotkeys.add(key, { disableInInput: true }, action) };
+  redirect = function(uri) { return function() { window.location = uri } };
+  focus = function(id) { return function() { $('#'+id).focus() } };
+  
   $(document).ready(function(){
 
     localOnload();
 
     // h => redirect to Home
-    HotKeys.add('h', redirect('<%= @uri.home %>'));
+    hotkey('h', redirect('<%= @uri.home %>'));
 
     // a => redirect to Add page
-    HotKeys.add('a', redirect('<%= @uri.new_page %>'));
+    hotkey('a', redirect('<%= @uri.new_page %>'));
 
     // l => redirect to List pages
-    HotKeys.add('l', redirect('<%= @uri.list %>'));
+    hotkey('l', redirect('<%= @uri.list %>'));
 
     // s => focus search box
-    HotKeys.add('s', function() { $("#menu-search-query").focus() });
+    hotkey('s', focus("menu-search-query"));
 
     // g => focus goto box
-    HotKeys.add('g', function() { $("#goto").focus() });
-
-    HotKeys.attach();
+    hotkey('g', focus("goto"));
 
     // page data for autocomplete
     var data = [ <%= @pages.collect {|p| "{ name: '#{p.name}', url: '#{@uri.page(p.name)}' }" }.join(', ') %> ];

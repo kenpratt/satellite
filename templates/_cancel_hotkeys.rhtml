@@ -1,10 +1,9 @@
 <script type="text/javascript">
   localOnload = function() {
     // esc => cancel
-    // TODO doesn't work in firefox (ironically, works in IE)
-    HotKeys.add('esc', redirect('<%= @redirect_uri %>'));
+    hotkey('esc', redirect('<%= @redirect_uri %>'));
 
     // c => cancel
-    HotKeys.add('c', redirect('<%= @redirect_uri %>'));
+    hotkey('c', redirect('<%= @redirect_uri %>'));
   };
 </script>
