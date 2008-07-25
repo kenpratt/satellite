@@ -35,7 +35,7 @@
     HotKeys.add('l', redirect('<%= @uri.list %>'));
 
     // s => focus search box
-    HotKeys.add('s', function() { $("#search-box-query").focus() });
+    HotKeys.add('s', function() { $("#menu-search-query").focus() });
 
     // g => focus goto box
     HotKeys.add('g', function() { $("#goto").focus() });
@@ -65,13 +65,6 @@
     </div>
 
     <div id="content-box">
-      <div id="search-box">
-        <form id="searchBox" action="<%= @uri.search %>" method="get">
-          <label for="search-box-query">Search:</label>
-          <input id="search-box-query" name="query" size="20" value="" />
-        </form>
-      </div>
-
       <% if @error %><p class="error"><%= @error %></p><% end %>
       <% if @conflicts.any? %>
         <div class="conflicts">
@@ -98,8 +91,12 @@
         <a href="<%= @uri.home %>">Home</a> |
         <a href="<%= @uri.new_page %>">Add page</a> |
         <a href="<%= @uri.list %>">List pages</a> |
-        <a href="<%= @uri.search %>">Search</a> |
-        Go to: <input id="goto" value="" onchange="" />
+        <form id="menu-search" action="<%= @uri.search %>" method="get">
+          <label for="menu-search-query">Search:</label>
+          <input id="menu-search-query" name="query" size="18" value="" />
+        </form> &nbsp;|
+        <label for="goto">Go to:</label>
+        <input id="goto" size="18" value="" />
       </div>
     </div>
   </div>

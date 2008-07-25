@@ -31,16 +31,15 @@ h1, h2, h3, h4, h5 {
   padding: 0.25em 0.6em;
   font-size: 90%;
 }
+#menu label {
+  font-weight: normal;
+}
+#menu-search {
+  display: inline;
+}
 
 #content-box {
   padding: 1em;
-}
-
-#search-box {
-  float: right;
-}
-#search-box label, #search-box input {
-  font-size: 85%;
 }
 
 #new-page #name, #rename-page #new_name {
