@@ -1,3 +1,14 @@
+<script type="text/javascript">
+  localOnload = function() {
+    // esc => cancel rename
+    // TODO doesn't work in firefox (ironically, works in IE)
+    HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
+
+    // c => cancel rename
+    HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
+  };
+</script>
+
 <form id="rename-page" action="<%= @uri.rename_page(@page.name) %>" method="post">
   <input id="new_name" name="new_name" size="20" value="<%= @page.name %>" />
   <button type="submit">Save</button>

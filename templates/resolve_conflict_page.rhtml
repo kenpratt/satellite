@@ -1,3 +1,14 @@
+<script type="text/javascript">
+  localOnload = function() {
+    // esc => cancel resolve
+    // TODO doesn't work in firefox (ironically, works in IE)
+    HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
+
+    // c => cancel resolve
+    HotKeys.add('c', redirect('<%= @uri.page(@page.name) %>'));
+  };
+</script>
+
 <form action="<%= @uri.page(@page.name) %>" method="post">
   <textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
   <button type="submit">Save</button>

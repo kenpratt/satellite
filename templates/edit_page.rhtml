@@ -1,7 +1,7 @@
 <script type="text/javascript">
   localOnload = function() {
     // esc => cancel edit
-    // TODO doesn't work (at least not in ff3)
+    // TODO doesn't work in firefox (ironically, works in IE)
     HotKeys.add('esc', redirect('<%= @uri.page(@page.name) %>'));
 
     // c => cancel edit
