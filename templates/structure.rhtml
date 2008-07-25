@@ -28,6 +28,12 @@
     // h => redirect to Home
     HotKeys.add('h', redirect('<%= @uri.home %>'));
 
+    // a => redirect to Add page
+    HotKeys.add('a', redirect('<%= @uri.new_page %>'));
+
+    // l => redirect to List pages
+    HotKeys.add('l', redirect('<%= @uri.list %>'));
+
     // s => focus search box
     HotKeys.add('s', function() { $("#search-box-query").focus() });
 
