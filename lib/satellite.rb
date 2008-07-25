@@ -17,7 +17,7 @@ module Satellite
     # local Git repository which is mirrored to a master repository.
     # "Pages" and "Uploads" are types of Hunks.
     class Hunk
-      VALID_NAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
+      VALID_FILENAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
 
       # -----------------------------------------------------------------------
       # class methods
@@ -26,7 +26,7 @@ module Satellite
       class << self
 
         def valid_name?(name)
-          name =~ /^[#{VALID_NAME_CHARS}]*$/
+          name =~ /^[#{VALID_FILENAME_CHARS}]*$/
         end
 
         def exists?(name)
@@ -133,7 +133,7 @@ module Satellite
 
         # try to extract the page name from the path
         def parse_name(path)
-          if path =~ /^(.*\/)?([#{VALID_NAME_CHARS}]+)\.textile$/
+          if path =~ /^(.*\/)?([#{Hunk::VALID_FILENAME_CHARS}]+)\.textile$/
             $2
           else
             path
@@ -225,8 +225,8 @@ module Satellite
 
     # all the wiki markup stuff should go in here
     class WikiMarkup
-      WIKI_LINK_FMT = /\{\{([#{Hunk::VALID_NAME_CHARS}]+)\}\}/
-      UPLOAD_LINK_FMT = /\{\{upload:([#{Hunk::VALID_NAME_CHARS}]+)\}\}/
+      WIKI_LINK_FMT = /\{\{([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
+      UPLOAD_LINK_FMT = /\{\{upload:([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
 
       AUTO_LINK_RE = %r{
                       (                          # leading text
@@ -330,8 +330,8 @@ module Satellite
   # controllers definitions go here
   module Controllers
 
-    VALID_NAME_CHARS = '\w \+\%\-\.'
-    NAME = "([#{VALID_NAME_CHARS}]+)"
+    VALID_URI_CHARS = '\w \+\%\-\.'
+    NAME = "([#{VALID_URI_CHARS}]+)"
 
     VALID_SEARCH_STRING_CHARS = '0-9a-zA-Z\+\%\`\~\!\^\*\(\)\_\-\[\]\{\}\\\|\'\"\.\<\>'
     SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
