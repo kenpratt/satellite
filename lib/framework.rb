@@ -80,7 +80,7 @@ module Framework
         out.write str
       end
     end
-    
+
     def process_template(template, context={})
       markup = open(template_path(template)).read
       partial_function = lambda {|*a| t, h = *a; process_template("_#{t}", h || {}) }

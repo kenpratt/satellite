@@ -24,7 +24,7 @@
   hotkey = function(key, action) { jQuery.hotkeys.add(key, { disableInInput: true }, action) };
   redirect = function(uri) { return function() { window.location = uri } };
   focus = function(id) { return function() { $('#'+id).focus() } };
-  
+
   $(document).ready(function(){
 
     localOnload();
