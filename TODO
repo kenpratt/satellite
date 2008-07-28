@@ -2,17 +2,26 @@
 
 == Tasks
 
-=== Now
+=== Now (pre-1.0) (priority in brackets)
 
-* rspec testing framework
-* fork ruby/git instead of monkeypatching it
-* set up deployment (rake/capistrano/vlad)
-* make a logo! (and a favicon to match)
+* (5) list page: add uploads list
+* (5) make a logo! (and favicon to match)
+* (5) hotkey reference (legend)
+* (5) wiki markup reference on new/edit pages
+* (5) better installation instructions
+* (4) list page: icons to rename, delete pages/uploads
+* (4) allow deletion of uploads
+* (3) fork ruby/git instead of monkeypatching it
+* (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
+* (2) set up deployment (rake/capistrano/vlad)
+* (2) allow renaming of uploads
+* (2) list page: highlight orphaned (no incoming links) items with red backgrounds
+* (1) append last-mod date to CSS/Javascript (create method to calc last mod time, return uri)
+* (1) polish up rspec testing framework
+* (1) satellite-wiki.com
 
-=== Soon
+=== Soon (maybe 1.0, maybe later)
 
-* allow deletion of uploads
-* allow renaming of uploads?
 * fix incoming links during page rename operations
 * page history view
 * revert page to some previous version
@@ -25,5 +34,5 @@
 * multiple remote repository support (instead of master/slave)
 * tagging
 * del.icio.us integration
-* set up satellite-wiki.com
-* switch from direct mongrel inheritance to rack adapter?
+* switch from direct mongrel inheritance to rack adapter
+* take another look at app auto-reloading
