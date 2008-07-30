@@ -331,7 +331,7 @@ module Framework
     def start
       h = Mongrel::HttpServer.new(@addr, @port)
       h.register('/', RequestHandler.new(@controller_module))
-      h.register('/static', Mongrel::DirHandler.new('static/'))
+      h.register('/static', Mongrel::DirHandler.new(CONF.static_dir))
       h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
       yield(h)
       log :info, "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"

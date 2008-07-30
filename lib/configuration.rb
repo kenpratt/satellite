@@ -20,6 +20,7 @@ class Configuration
   attr_accessor :app_dir
   attr_accessor :conf_dir
   attr_accessor :template_dir
+  attr_accessor :static_dir
 
   # path of folder to store wiki app data in (this folder will be created)
   attr_accessor :data_dir
@@ -46,6 +47,7 @@ class Configuration
     self.conf_dir               = File.join(app_dir, 'conf')
     self.template_dir           = File.join(app_dir, 'templates')
     self.data_dir               = File.join(app_dir, 'data')
+    self.static_dir             = File.join(app_dir, 'static')
     self.log_level              = :warn
     self.auto_reload            = false
     self.max_upload_filesize    = 200
@@ -61,8 +63,9 @@ class Configuration
   def to_s
     [
       :app_name, :server_ip, :server_port, :master_repository_uri,
-      :sync_frequency, :user_name, :user_email, :app_dir, :conf_dir,
-      :template_dir, :data_dir, :log_level, :auto_reload, :max_upload_filesize
+      :sync_frequency, :user_name, :user_email, :app_dir, :conf_dir, 
+      :static_dir, :template_dir, :data_dir, :log_level, :auto_reload, 
+      :max_upload_filesize
     ].collect do |c|
       sprintf "%12-s => %s", c.to_s, send(c).to_s
     end.join("\n")
