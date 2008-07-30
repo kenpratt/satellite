@@ -290,7 +290,8 @@ module Satellite
               lang = :plaintext
             end
             code = CodeRay.scan(code, lang).html.div
-            "<notextile>#{code}</notextile>"
+            # add surrounding newlines to avoid garbling during textile parsing
+            "\n\n<notextile>#{code}</notextile>\n\n"
           end
         end
 
