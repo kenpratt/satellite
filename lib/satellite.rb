@@ -231,7 +231,7 @@ module Satellite
       AUTO_LINK_RE = %r{
                       (                          # leading text
                         <\w+.*?>|                # leading HTML tag, or
-                        [^=!:'"/]|               # leading punctuation, or
+                        [^=!:\'\"/]|             # leading punctuation, or
                         ^                        # beginning of line
                       )
                       (
@@ -247,7 +247,7 @@ module Satellite
                         (?:\#[\w\-]*)?           # trailing anchor
                       )
                       ([[:punct:]]|\s|<|$)       # trailing text
-                     }x unless const_defined?(:AUTO_LINK_RE)
+                     }x
 
       class << self
         def process(str)
