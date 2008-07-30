@@ -1,0 +1,9 @@
+<h3>Pages</h3>
+<% for page in @pages %>
+  <li><a href="<%= @uri.page(page.name) %>"><%= page.name %></a></li>
+<% end %>
+
+<h3>Uploads</h3>
+<% for upload in @uploads %>
+  <li><a href="<%= @uri.upload(upload.name) %>"><%= upload.name %></a></li>
+<% end %>

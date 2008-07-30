@@ -19,6 +19,8 @@ module Satellite
     class Hunk
       VALID_FILENAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
 
+      include Comparable
+
       # -----------------------------------------------------------------------
       # class methods
       # -----------------------------------------------------------------------
@@ -33,6 +35,10 @@ module Satellite
           File.exists?(filepath(name))
         end
 
+        def list
+          Dir[filepath('*')].collect {|s| self.new(parse_name(s)) }.sort
+        end
+
         # "foo.ext" (just the name by default)
         def filename(name); name; end
 
@@ -42,6 +48,15 @@ module Satellite
         # "path/to/pages/foo.ext"
         def filepath(name); File.join(CONF.data_dir, content_dir, filename(name)); end
 
+
+        # try to extract the page name from the path
+        def parse_name(path)
+          if path =~ /^(.*\/)?([#{Hunk::VALID_FILENAME_CHARS}]+)$/
+            $2
+          else
+            path
+          end
+        end
       end
 
       # -----------------------------------------------------------------------
@@ -72,6 +87,11 @@ module Satellite
       def local_filepath; klass.local_filepath(name); end
       def filepath; klass.filepath(name); end
 
+      # sort home above other pages, otherwise alphabetical order
+      def <=>(other)
+        name <=> other.name
+      end
+
     private
 
       def name=(name)
@@ -84,7 +104,6 @@ module Satellite
 
     # "Page" is a Hunk representing a wiki page
     class Page < Hunk
-      include Comparable
 
       # -----------------------------------------------------------------------
       # class methods
@@ -92,10 +111,6 @@ module Satellite
 
       class << self
         def content_dir; PAGE_DIR; end
-
-        def list
-          Dir[filepath('*')].collect {|s| Page.new(parse_name(s)) }.sort
-        end
 
         def search(query)
           out = {}
@@ -210,7 +225,9 @@ module Satellite
       # -----------------------------------------------------------------------
 
       class << self
+
         def content_dir; UPLOAD_DIR; end
+
       end
 
       # -----------------------------------------------------------------------
@@ -457,7 +474,8 @@ module Satellite
 
     class ListController < controller '/list'
       def get
-        render 'list_pages', 'All pages'
+        # @pages is populated for all pages, since it is used in goto jump box
+        render 'list', 'All pages and uploads', :uploads => Models::Upload.list
       end
     end
 
