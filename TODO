@@ -7,11 +7,9 @@
 * (5) fix rename/delete so that cancel redirects to the page you came from and posting redirects to a sensible place
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (4) allow deletion of uploads
 * (3) fork ruby/git instead of monkeypatching it
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
 * (2) set up deployment (rake/capistrano/vlad)
-* (2) allow renaming of uploads
 * (2) list page: highlight orphaned (no incoming links) items with red backgrounds
 * (2) on app startup, don't start server until sync is complete (also: show sync progress?)
 * (1) append last-mod date to CSS/Javascript (create method to calc last mod time, return uri)
@@ -24,6 +22,7 @@
 * fix incoming links during page rename operations
 * page history view
 * revert page to some previous version
+* extend search to search upload names (and upload content?)
 
 === Later?
 

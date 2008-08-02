@@ -1,0 +1,7 @@
+<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.list } %>
+
+<form id="delete-upload" action="<%= @uri.delete_upload(@upload.name) %>" method="post">
+  <p>You're sure?</p>
+  <button type="submit">Delete</button>
+  or <a href="<%= @uri.list %>">Cancel</a>
+</form>
