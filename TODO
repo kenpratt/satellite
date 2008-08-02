@@ -4,9 +4,9 @@
 
 === Now (pre-1.0) (priority in brackets)
 
+* (5) fix rename/delete so that cancel redirects to the page you came from and posting redirects to a sensible place
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (4) list page: icons to rename, delete pages/uploads
 * (4) allow deletion of uploads
 * (3) fork ruby/git instead of monkeypatching it
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)

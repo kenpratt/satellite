@@ -41,6 +41,12 @@ h1, h2, h3, h4, h5 {
 #content-box {
   padding: 1em;
 }
+#footer-box {
+  margin-bottom: 0.75em;
+}
+.clear {
+  clear: both;
+}
 
 #new-page #name, #rename-page #new_name {
   font-size: 170%;
@@ -140,4 +146,27 @@ table.markup-reference td {
 table.markup-reference td.markup {
   font-family: monospace;
   width: 20em;
+}
+
+#page-list {
+  float: left;
+  width: 30em;
+}
+#upload-list {
+  float: left;
+  width: 30em;
+}
+#page-list .rename, #upload-list .rename {
+  padding: 1px 20px 1px 0;
+  background: transparent url('/static/textfield_rename.png') no-repeat right 0;
+}
+#page-list .rename span, #upload-list .rename span {
+  display: none;
+}
+#page-list .delete, #upload-list .delete {
+  padding: 1px 20px 1px 0;
+  background: transparent url('/static/bullet_delete.png') no-repeat right 0;
+}
+#page-list .delete span, #upload-list .delete span {
+  display: none;
 }

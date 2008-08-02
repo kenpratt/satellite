@@ -1,9 +1,23 @@
-<h3>Pages</h3>
-<% for page in @pages %>
-  <li><a href="<%= @uri.page(page.name) %>"><%= page.name %></a></li>
-<% end %>
+<div id="page-list">
+  <h3>Pages</h3>
+  <% for page in @pages %>
+    <li>
+      <a href="<%= @uri.page(page.name) %>"><%= page.name %></a>
+      <a class="rename" href="<%= @uri.rename_page(page.name) %>"><span>Rename</span></a>
+      <a class="delete" href="<%= @uri.delete_page(page.name) %>"><span>Delete</span></a>
+    </li>
+  <% end %>
+</div>
 
-<h3>Uploads</h3>
-<% for upload in @uploads %>
-  <li><a href="<%= @uri.upload(upload.name) %>"><%= upload.name %></a></li>
-<% end %>
+<div id="upload-list">
+  <h3>Uploads</h3>
+  <% for upload in @uploads %>
+    <li>
+      <a href="<%= @uri.upload(upload.name) %>"><%= upload.name %></a>
+      <a class="rename" href="<%= @uri.rename_upload(page.name) %>"><span>Rename</span></a>
+      <a class="delete" href="<%= @uri.delete_upload(page.name) %>"><span>Delete</span></a>
+    </li>
+  <% end %>
+</div>
+
+<div class="clear"></div>

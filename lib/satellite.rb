@@ -385,6 +385,8 @@ module Satellite
               "/upload"
             end
           end
+          def rename_upload(name) "/" end # TODO implement
+          def delete_upload(name) "/" end # TODO implement
           def help() '/help' end
         end
       end
