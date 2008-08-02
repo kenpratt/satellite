@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+#
+# Irb console with app loaded
+#
+
+# libraries
+libs = ""
+libs << " -r #{File.join(File.expand_path(File.dirname(__FILE__)), 'load_production_config')} "
+libs << " -r #{File.join(File.expand_path(File.dirname(__FILE__)), '../lib/satellite')} "
+
+# start server
+puts "irb #{libs}"
