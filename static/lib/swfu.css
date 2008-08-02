@@ -8,69 +8,69 @@
 :focus { outline: 0; }
 
 /* -- Form Styles ------------------------------- */
-#upload_form fieldset {
+#upload-form fieldset {
   border:  1px solid #afe14c;
   margin: 5px 0;
   padding: 20px 10px;
 }
 
 /* IE6 FIX */
-html #upload_form fieldset {
+html #upload-form fieldset {
   position: relative;
   margin-top:1em;
 }
 /* IE6 FIX */
-html #upload_form legend {
+html #upload-form legend {
   position:absolute;
   top: -0.5em;
   left: .5em;
 }
 
-#upload_form fieldset.flash {
+#upload-form fieldset.flash {
   width: 375px;
   margin: 10px 5px;
   border-color: #D9E4FF;
 }
 
-#upload_form legend {
+#upload-form legend {
   font: 700 14px Arial, Helvetica, sans-serif;
   padding: 0 5px;
   margin: 0 10px;
   color: #73b304;
 }
 
-#upload_form button,
-#upload_form input,
-#upload_form select,
-#upload_form textarea {
+#upload-form button,
+#upload-form input,
+#upload-form select,
+#upload-form textarea {
   border-width: 1px;
   margin-bottom: 10px;
   padding: 2px 3px;
 }
 
-#upload_form input[disabled]{ border: 1px solid #ccc } /* FF 2 Fix */
+#upload-form input[disabled]{ border: 1px solid #ccc } /* FF 2 Fix */
 
-#upload_form label {
+#upload-form label {
   width: 150px;
   text-align: right;
   display:block;
   margin-right: 5px;
 }
 
-#upload_form #btnSubmit { margin: 0 0 0 155px ; }
+#upload-form #btn-submit { margin: 0 0 0 155px ; }
 
 /* -- Table Styles ------------------------------- */
-#upload_form td {
+#upload-form td {
   font: 10pt Helvetica, Arial, sans-serif;
   vertical-align: top;
 }
 
-#upload_form .progressWrapper {
+#upload-form .progressWrapper {
   width: 357px;
   overflow: hidden;
 }
 
-#upload_form .progressContainer {
+#upload-form .progressContainer {
   margin: 5px;
   padding: 4px;
   border: solid 1px #E8E8E8;
@@ -78,7 +78,7 @@ html #upload_form legend {
   overflow: hidden;
 }
 /* Message */
-#upload_form .message {
+#upload-form .message {
   margin: 1em 0;
   padding: 10px 20px;
   border: solid 1px #FFDD99;
@@ -86,24 +86,24 @@ html #upload_form legend {
   overflow: hidden;
 }
 /* Error */
-#upload_form .red {
+#upload-form .red {
   border: solid 1px #B50000;
   background-color: #FFEBEB;
 }
 
 /* Current */
-#upload_form .green {
+#upload-form .green {
   border: solid 1px #DDF0DD;
   background-color: #EBFFEB;
 }
 
 /* Complete */
-#upload_form .blue {
+#upload-form .blue {
   border: solid 1px #CEE2F2;
   background-color: #F0F5FF;
 }
 
-#upload_form .progressName {
+#upload-form .progressName {
   font-size: 8pt;
   font-weight: 700;
   color: #555;
@@ -114,9 +114,9 @@ html #upload_form legend {
   overflow: hidden;
 }
 
-#upload_form .progressBarInProgress,
-#upload_form .progressBarComplete,
-#upload_form .progressBarError {
+#upload-form .progressBarInProgress,
+#upload-form .progressBarComplete,
+#upload-form .progressBarError {
   font-size: 0;
   width: 0%;
   height: 2px;
@@ -124,19 +124,19 @@ html #upload_form legend {
   margin-top: 2px;
 }
 
-#upload_form .progressBarComplete {
+#upload-form .progressBarComplete {
   width: 100%;
   background-color: green;
   visibility: hidden;
 }
 
-#upload_form .progressBarError {
+#upload-form .progressBarError {
   width: 100%;
   background-color: red;
   visibility: hidden;
 }
 
-#upload_form .progressBarStatus {
+#upload-form .progressBarStatus {
   margin-top: 2px;
   width: 337px;
   font-size: 7pt;
@@ -145,7 +145,7 @@ html #upload_form legend {
   white-space: nowrap;
 }
 
-#upload_form a.progressCancel {
+#upload-form a.progressCancel {
   font-size: 0;
   display: block;
   height: 14px;
@@ -156,6 +156,6 @@ html #upload_form legend {
   float: right;
 }
 
-#upload_form a.progressCancel:hover {
+#upload-form a.progressCancel:hover {
   background-position: 0px 0px;
 }

@@ -48,7 +48,7 @@ h1, h2, h3, h4, h5 {
   clear: both;
 }
 
-#new-page #name, #rename-page #new_name {
+#new-page #name, #rename-page #new-name, #rename-upload #new-name {
   font-size: 170%;
   font-weight: bold;
 }
@@ -116,7 +116,7 @@ textarea#content {
   background: #ffc;
 }
 
-#file_upload {
+#file-upload {
   border: 1px solid #ccc;
   margin: 1em;
   padding: 1em;

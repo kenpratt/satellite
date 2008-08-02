@@ -172,6 +172,6 @@ function uploadComplete(file) {
 
 // This event comes from the Queue Plugin
 function queueComplete(numFilesUploaded) {
-  var status = document.getElementById("divStatus");
+  var status = document.getElementById("upload-status");
   status.innerHTML = numFilesUploaded + " file" + (numFilesUploaded === 1 ? "" : "s") + " uploaded.";
 }
