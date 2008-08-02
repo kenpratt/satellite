@@ -14,6 +14,7 @@
 * (2) set up deployment (rake/capistrano/vlad)
 * (2) allow renaming of uploads
 * (2) list page: highlight orphaned (no incoming links) items with red backgrounds
+* (2) on app startup, don't start server until sync is complete (also: show sync progress?)
 * (1) append last-mod date to CSS/Javascript (create method to calc last mod time, return uri)
 * (1) polish up rspec testing framework
 * (1) satellite-wiki.com

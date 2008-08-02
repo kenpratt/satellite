@@ -195,7 +195,19 @@ module Db
     end
 
     def add(file)
-      @git.add(file)
+      begin
+        @git.add(file)
+      rescue Git::GitExecuteError => e
+        case e.message
+        when /unable to create '(.+index\.lock)'/
+          # race condition, deleting the lock file should fix it
+          puts "Error in Db.add: Need to delete #{$1}"
+          raise e
+        else
+          puts "Unexpected error in Db.add: \"#{e.message}\""
+          raise e
+        end
+      end
     end
 
     def mv(from, to)
