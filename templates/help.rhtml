@@ -1,27 +1,78 @@
-<h3>Shortcut keys</h3>
-<h4>Everywhere</h4>
+<h3>Contents</h3>
+<ol>
+  <li>
+    <a href="#shortcut-keys">Shortcut keys</a>
+    <ol>
+      <li><a href="#global">Everywhere</a></li>
+      <li><a href="#on-view-page">While viewing a page</a></li>
+      <li><a href="#on-edit-page">While adding or editing a page</a></li>
+      <li><a href="#on-delete-page">While renaming or deleting a page</a></li>
+    </ol>
+  </li>
+  <li>
+    <a href="#wiki-formatting">Wiki Formatting</a>
+    <ol>
+      <li><a href="#textile-markup">Textile markup</a></li>
+      <li><a href="#custom-markup">Custom markup</a></li>
+    </ol>
+  </li>
+</ol>
+
+<h3 id="shortcut-keys">Shortcut keys</h3>
+<p>Shortcut keys are available on all over the wiki to help you get around. Just hit the key to do the action. No need to hold, alt, control, or anything like that.</p>
+
+<h4 id="global">Everywhere</h4>
 <table class="hotkeys">
-  <tr><td class="hotkey">h</td><td>Go to <u><b>H</b></u>ome page</td></tr>
-  <tr><td class="hotkey">a</td><td><u><b>A</b></u>dd a page</td></tr>
-  <tr><td class="hotkey">l</td><td><u><b>L</b></u>ist pages and uploads</td></tr>
-  <tr><td class="hotkey">s</td><td><u><b>S</b></u>earch</td></tr>
-  <tr><td class="hotkey">g</td><td><u><b>G</b></u>o to a page</td></tr>
+  <tr><td class="hotkey">h</td><td>Go to <span class="hotletter">H</span>ome page</td></tr>
+  <tr><td class="hotkey">a</td><td><span class="hotletter">A</span>dd a page</td></tr>
+  <tr><td class="hotkey">l</td><td><span class="hotletter">L</span>ist pages and uploads</td></tr>
+  <tr><td class="hotkey">s</td><td><span class="hotletter">S</span>earch</td></tr>
+  <tr><td class="hotkey">g</td><td><span class="hotletter">G</span>o to a page</td></tr>
 </table>
 
-<h4>While viewing a page</h4>
+<h4 id="on-view-page">While viewing a page</h4>
 <table class="hotkeys">
-  <tr><td class="hotkey">e</td><td><u><b>E</b></u>dit the current page</td></tr>
-  <tr><td class="hotkey">r</td><td><u><b>R</b></u>ename the current page</td></tr>
-  <tr><td class="hotkey">d</td><td><u><b>D</b></u>elete the current page</td></tr>
-  <tr><td class="hotkey">u</td><td><u><b>U</b></u>pload a file and attach it to the current page</td></tr>
+  <tr><td class="hotkey">e</td><td><span class="hotletter">E</span>dit the current page</td></tr>
+  <tr><td class="hotkey">r</td><td><span class="hotletter">R</span>ename the current page</td></tr>
+  <tr><td class="hotkey">d</td><td><span class="hotletter">D</span>elete the current page</td></tr>
+  <tr><td class="hotkey">u</td><td><span class="hotletter">U</span>pload a file and attach it to the current page</td></tr>
 </table>
 
-<h4>While adding or editing a page</h4>
+<h4 id="on-edit-page">While adding or editing a page</h4>
 <table class="hotkeys">
-  <tr><td class="hotkey">c or escape</td><td><u><b>C</b></u>ancel add/edit</td></tr>
+  <tr><td class="hotkey">c or escape</td><td><span class="hotletter">C</span>ancel add/edit</td></tr>
 </table>
 
-<h4>While renaming or deleting a page</h4>
+<h4 id="on-delete-page">While renaming or deleting a page</h4>
 <table class="hotkeys">
-  <tr><td class="hotkey">c or escape</td><td><u><b>C</b></u>ancel rename/delete</td></tr>
+  <tr><td class="hotkey">c or escape</td><td><span class="hotletter">C</span>ancel rename/delete</td></tr>
+</table>
+
+<h3 id="wiki-formatting">Wiki formatting</h3>
+<p><a href="http://textile.thresholdstate.com/">Textile</a> markup is used adding and editing wiki pages, with a few extra goodies thrown in.</p>
+
+<h4 id="textile-markup">Textile markup</h4>
+<p><a href="http://hobix.com/textile/">Full Textile reference</a></p>
+<table class="markup-reference">
+  <tr><th>Markup</th><th>Result</th></tr>
+  <tr><td class="markup">*Bolded text*</td><td><strong>Bolded text</strong></td></tr>
+  <tr><td class="markup">_Italicized text_</td><td><em>Italicized text</em></td></tr>
+  <tr><td class="markup">@Code snippet@</td><td><code>Code snippet</code></td></tr>
+  <tr><td class="markup">"Link to google.ca":http://google.ca/</td><td>	<p><a href="http://google.ca/">Link to google.ca</a></p></td></tr>
+  <tr><td class="markup">h3. Heading</td><td><h3>Heading</h3></td></tr>
+  <tr><td class="markup">h4. Smaller heading</td><td><h4>Smaller heading</h4></td></tr>
+  <tr><td class="markup">h5. Even smaller heading</td><td><h5>Even smaller heading</h5></td></tr>
+  <tr><td class="markup">* Bulleted<br/>* List</td><td><ul><li>Bulleted</li><li>List</li></ul></td></tr>
+  <tr><td class="markup"># Numbered<br/># List</td><td><ol><li>Numbered</li><li>List</li></ol></td></tr>
+</table>
+
+<h4 id="custom-markup">Custom markup</h4>
+<table class="markup-reference">
+  <tr><th>Markup</th><th>Result</th></tr>
+  <tr><td class="markup">{{Wiki Page}}</td><td><a href="/page/Wiki+Page">Wiki Page</a></td></tr>
+  <tr><td class="markup">{{upload:cool_photo.jpg}}</td><td><a href="/upload/cool_photo.jpg">cool_photo.jpg</a></td></tr>
+  <tr><td class="markup">{{{<br/>// code block<br/>x = 2;<br/>}}}</td><td><div class="CodeRay"><div class="code"><pre>// code block
+x = 2;</pre></div></div></td></tr>
+  <tr><td class="markup">{{{(ruby)<br/># ruby code<br/>@letters = "Hello".split(//)<br/>}}}</td><td><div class="CodeRay"><div class="code"><pre><span class="c"># ruby code</span>
+<span class="iv">@letters</span> = <span class="s"><span class="dl">&quot;</span><span class="k">Hello</span><span class="dl">&quot;</span></span>.split(<span class="rx"><span class="dl">/</span><span class="dl">/</span></span>)</pre></div></div></td></tr>
 </table>

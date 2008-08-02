@@ -126,3 +126,18 @@ table.hotkeys {
 table.hotkeys td.hotkey {
   width: 7em;
 }
+table.hotkeys span.hotletter {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+table.markup-reference {
+  width: 50em;
+}
+table.markup-reference td {
+  vertical-align: top;
+}
+table.markup-reference td.markup {
+  font-family: monospace;
+  width: 20em;
+}
