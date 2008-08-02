@@ -385,6 +385,7 @@ module Satellite
               "/upload"
             end
           end
+          def help() '/help' end
         end
       end
     end
@@ -519,6 +520,12 @@ module Satellite
         upload = Models::Upload.new(@input['Filedata'][:filename].strip)
         upload.save(@input['Filedata'][:tempfile])
         respond "Thanks!"
+      end
+    end
+    
+    class HelpController < controller '/help'
+      def get
+        render 'help', 'Help'
       end
     end
   end

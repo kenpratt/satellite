@@ -115,3 +115,14 @@ textarea#content {
   margin: 1em;
   padding: 1em;
 }
+
+#help-link {
+  float: right;
+}
+
+table.hotkeys {
+  width: 32em;
+}
+table.hotkeys td.hotkey {
+  width: 7em;
+}
