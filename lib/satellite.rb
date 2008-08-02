@@ -39,6 +39,20 @@ module Satellite
           Dir[filepath('*')].collect {|s| self.new(parse_name(s)) }.sort
         end
 
+        def load(name)
+          if exists?(name)
+            self.new(name)
+          else
+            raise Db::FileNotFound.new("#{self} #{name} does not exist")
+          end
+        end
+
+        def rename(old_name, new_name)
+          hunk = load(old_name)
+          hunk.rename(new_name) if hunk && new_name != old_name
+          hunk
+        end
+
         # "foo.ext" (just the name by default)
         def filename(name); name; end
 
@@ -47,7 +61,6 @@ module Satellite
 
         # "path/to/pages/foo.ext"
         def filepath(name); File.join(CONF.data_dir, content_dir, filename(name)); end
-
 
         # try to extract the page name from the path
         def parse_name(path)
@@ -81,6 +94,17 @@ module Satellite
         rescue Db::ContentNotModified
           log :debug, "Hunk.save(): #{name} wasn't modified since last save"
         end
+      end
+
+      def rename(new_name)
+        old_name = name
+        self.name = new_name
+        raise ArgumentError.new("New name can't be blank") unless name.any?
+        Db.mv(klass.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
+      end
+
+      def delete!
+        Db.rm(local_filepath, "Satellite: deleting #{name}")
       end
 
       def filename; klass.filename(name); end
@@ -137,12 +161,6 @@ module Satellite
           end
         end
 
-        def rename(old_name, new_name)
-          page = load(old_name)
-          page.rename(new_name) if page
-          page
-        end
-
         # "foo.textile"
         def filename(name); "#{name}.textile"; end
 
@@ -190,17 +208,6 @@ module Satellite
         original_save(@body)
       end
 
-      def rename(new_name)
-        old_name = name
-        self.name = new_name
-        raise ArgumentError.new("New name can't be blank") unless name.any?
-        Db.mv(Page.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
-      end
-
-      def delete!
-        Db.rm(local_filepath, "Satellite: deleting #{name}")
-      end
-
       # sort home above other pages, otherwise alphabetical order
       def <=>(other)
         if name == 'Home'
@@ -225,9 +232,7 @@ module Satellite
       # -----------------------------------------------------------------------
 
       class << self
-
         def content_dir; UPLOAD_DIR; end
-
       end
 
       # -----------------------------------------------------------------------
@@ -237,7 +242,6 @@ module Satellite
       def initialize(name='')
         self.name = name
       end
-
     end
 
     # all the wiki markup stuff should go in here
@@ -377,7 +381,7 @@ module Satellite
           def list() '/list' end
           def home() '/page/Home' end
           def search() '/search' end
-          def upload(name) "/upload/#{escape(name)}" end
+          def upload(name) "/uploads/#{escape(name)}" end
           def upload_file(page_name=nil)
             if page_name
               "/page/#{escape(page_name)}/upload"
@@ -385,8 +389,8 @@ module Satellite
               "/upload"
             end
           end
-          def rename_upload(name) "/" end # TODO implement
-          def delete_upload(name) "/" end # TODO implement
+          def rename_upload(name) "/upload/#{escape(name)}/rename" end
+          def delete_upload(name) "/upload/#{escape(name)}/delete" end
           def help() '/help' end
         end
       end
@@ -514,14 +518,38 @@ module Satellite
     end
 
     class UploadController < controller '/upload'
-
-      # no get() required -- files are served up directly by Mongrel
+      # no get() required -- files are served up directly by Mongrel (at URI "/uploads")
 
       def post
         log :debug, "Uploaded: #{@input}"
         upload = Models::Upload.new(@input['Filedata'][:filename].strip)
         upload.save(@input['Filedata'][:tempfile])
         respond "Thanks!"
+      end
+    end
+    
+    class RenameUploadController < controller "/upload/#{NAME}/rename"
+      def get(name)
+        upload = Models::Upload.load(name)
+        render 'rename_upload', "Renaming #{upload.name}", :upload => upload
+      end
+
+      def post(name)
+        upload = Models::Upload.rename(name, @input['new_name'].strip)
+        redirect Uri.list
+      end
+    end
+
+    class DeleteUploadController < controller "/upload/#{NAME}/delete"
+      def get(name)
+        upload = Models::Upload.load(name)
+        render 'delete_upload', "Deleting #{upload.name}", :upload => upload
+      end
+
+      def post(name)
+        upload = Models::Upload.load(name)
+        upload.delete!
+        redirect Uri.list
       end
     end
     
@@ -559,7 +587,7 @@ module Satellite
 
       # start server
       Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start do |h|
-        h.register('/upload', Mongrel::DirHandler.new(File.join(CONF.data_dir, Models::UPLOAD_DIR)))
+        h.register('/uploads', Mongrel::DirHandler.new(File.join(CONF.data_dir, Models::UPLOAD_DIR)))
       end
     end
   end
