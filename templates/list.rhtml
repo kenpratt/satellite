@@ -30,7 +30,7 @@
     <a href="#" onclick="showFileUploadForm(); return false;">Upload a file</a>
   </p>
 
-  <%= @partial.call :file_upload, { :complete_uri => @uri.list, :upload_uri => @uri.upload_file, :conf => @conf } %>
+  <%= @partial.call :file_upload, { :complete_uri => @uri.list, :upload_uri => @uri.upload_file, :conf => @conf, :uri => @uri } %>
 </div>
 
 <div class="clear"></div>

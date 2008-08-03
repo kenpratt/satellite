@@ -22,4 +22,4 @@
   <a href="#" onclick="showFileUploadForm(); return false;">Upload a file</a>
 </p>
 
-<%= @partial.call :file_upload, { :complete_uri => @uri.page(@page.name), :upload_uri => @uri.upload_file(@page.name), :conf => @conf } %>
+<%= @partial.call :file_upload, { :complete_uri => @uri.page(@page.name), :upload_uri => @uri.upload_file(@page.name), :conf => @conf, :uri => @uri } %>

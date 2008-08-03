@@ -443,6 +443,10 @@ module Satellite
           def rename_upload(name) "/upload/#{escape(name)}/rename" end
           def delete_upload(name) "/upload/#{escape(name)}/delete" end
           def help() '/help' end
+          def static(file)
+            lastmod = File.ctime(File.join(CONF.static_dir, file)).strftime('%Y%m%d%H%M')
+            "/static/#{file}?#{lastmod}"
+          end
         end
       end
     end
