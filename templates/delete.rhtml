@@ -1,0 +1,7 @@
+<%= @partial.call :cancel_hotkeys, { :redirect_uri => @cancel_uri } %>
+
+<form id="delete-hunk" action="<%= @uri.delete(@hunk) %>" method="post">
+  <p>You're sure?</p>
+  <button type="submit">Delete</button>
+  or <a href="<%= @cancel_uri %>">Cancel</a>
+</form>

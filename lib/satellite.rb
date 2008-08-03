@@ -364,8 +364,23 @@ module Satellite
       alias :original_render :render
       def render(template, title, params={})
         common_params = { :title => title, :uri => Uri, :conf => CONF,
-          :pages => Models::Page.list, :conflicts => Models::Page.conflicts }
+          :pages => Models::Page.list, :conflicts => Models::Page.conflicts,
+          :referrer => @referrer }
         original_render(template, params.merge!(common_params))
+      end
+
+      # for controllers that can share some page/upload logic
+      # in general, pages should redirect back to the page itself,
+      # and uploads should redirect back to the list page
+      def page_or_upload(type, name)
+        case type
+        when 'page'
+          @klass = Models::Page
+          @cancel_uri = @referrer || Uri.page(name)
+        when 'upload'
+          @klass = Models::Upload
+          @cancel_uri = @referrer || Uri.list
+        end
       end
 
       # uri mappings
@@ -374,8 +389,28 @@ module Satellite
         class << self
           def page(name) "/page/#{escape(name)}" end
           def edit_page(name) "/page/#{escape(name)}/edit" end
-          def rename_page(name) "/page/#{escape(name)}/rename" end
-          def delete_page(name) "/page/#{escape(name)}/delete" end
+          def rename(hunk)
+            case hunk
+            when Models::Page
+              "/page/#{escape(hunk.name)}/rename"
+            when Models::Upload
+              "/upload/#{escape(hunk.name)}/rename"
+            else
+              log :error, "#{hunk} is neither a Page nor an Upload"
+              ""
+            end
+          end
+          def delete(hunk)
+            case hunk
+            when Models::Page
+              "/page/#{escape(hunk.name)}/delete"
+            when Models::Upload
+              "/upload/#{escape(hunk.name)}/delete"
+            else
+              log :error, "#{hunk} is neither a Page nor an Upload"
+              ""
+            end
+          end
           def resolve_conflict(name) "/page/#{escape(name)}/resolve" end
           def new_page() '/new' end
           def list() '/list' end
@@ -455,27 +490,40 @@ module Satellite
       end
     end
 
-    class RenamePageController < controller "/page/#{NAME}/rename"
-      def get(name)
-        page = Models::Page.load(name)
-        render 'rename_page', "Renaming #{page.name}", :page => page
+    class RenameController < controller "/(page|upload)/#{NAME}/rename"
+      def get(type, name)
+        page_or_upload(type, name)
+        hunk = @klass.load(name)
+        render 'rename', "Renaming #{hunk.name}", :hunk => hunk, :cancel_uri => @cancel_uri
       end
 
-      def post(name)
-        page = Models::Page.rename(name, @input['new_name'].strip)
-        redirect Uri.page(page.name)
+      def post(type, name)
+        page_or_upload(type, name)
+        hunk = @klass.rename(name, @input['new_name'].strip)
+
+        # figure out where to redirect to
+        return_to = @input['return_to'].strip
+        if return_to.any? && return_to != Uri.send(type, name)
+          redirect return_to
+        elsif @klass == Models::Page
+          redirect Uri.page(hunk.name)
+        elsif @klass == Models::Upload
+          redirect Uri.list
+        end
       end
     end
 
-    class DeletePageController < controller "/page/#{NAME}/delete"
-      def get(name)
-        page = Models::Page.load(name)
-        render 'delete_page', "Deleting #{page.name}", :page => page
+    class DeleteController < controller "/(page|upload)/#{NAME}/delete"
+      def get(type, name)
+        page_or_upload(type, name)
+        hunk = @klass.load(name)
+        render 'delete', "Deleting #{hunk.name}", :hunk => hunk, :cancel_uri => @cancel_uri
       end
 
-      def post(name)
-        page = Models::Page.load(name)
-        page.delete!
+      def post(type, name)
+        page_or_upload(type, name)
+        hunk = @klass.load(name)
+        hunk.delete!
         redirect Uri.list
       end
     end
@@ -525,31 +573,6 @@ module Satellite
         upload = Models::Upload.new(@input['Filedata'][:filename].strip)
         upload.save(@input['Filedata'][:tempfile])
         respond "Thanks!"
-      end
-    end
-    
-    class RenameUploadController < controller "/upload/#{NAME}/rename"
-      def get(name)
-        upload = Models::Upload.load(name)
-        render 'rename_upload', "Renaming #{upload.name}", :upload => upload
-      end
-
-      def post(name)
-        upload = Models::Upload.rename(name, @input['new_name'].strip)
-        redirect Uri.list
-      end
-    end
-
-    class DeleteUploadController < controller "/upload/#{NAME}/delete"
-      def get(name)
-        upload = Models::Upload.load(name)
-        render 'delete_upload', "Deleting #{upload.name}", :upload => upload
-      end
-
-      def post(name)
-        upload = Models::Upload.load(name)
-        upload.delete!
-        redirect Uri.list
       end
     end
     

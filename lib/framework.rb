@@ -189,6 +189,16 @@ module Framework
         # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have response and input as args?
 
+        # inject the referring page
+        raw_referrer, raw_host = request.params['HTTP_REFERER'], request.params['HTTP_HOST']
+        if raw_referrer
+          referrer = raw_referrer.sub(/^.+#{raw_host}\//, '/')
+          controller.instance_variable_set("@referrer", referrer)
+          log :debug, "raw referrer: #{raw_referrer} & raw host: #{raw_host} => final referrer: #{referrer}"
+        else
+          controller.instance_variable_set("@referrer", nil)
+        end
+
         # inject the response object
         controller.instance_variable_set("@response", response)
 

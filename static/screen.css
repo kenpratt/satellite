@@ -48,7 +48,7 @@ h1, h2, h3, h4, h5 {
   clear: both;
 }
 
-#new-page #name, #rename-page #new-name, #rename-upload #new-name {
+#new-page #name, #rename-hunk #new-name {
   font-size: 170%;
   font-weight: bold;
 }

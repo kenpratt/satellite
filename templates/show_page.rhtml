@@ -10,10 +10,10 @@
     hotkey('e', redirect('<%= @uri.edit_page(@page.name) %>'));
 
     // r => rename page
-    hotkey('r', redirect('<%= @uri.rename_page(@page.name) %>'));
+    hotkey('r', redirect('<%= @uri.rename(@page) %>'));
 
     // d => delete page
-    hotkey('d', redirect('<%= @uri.delete_page(@page.name) %>'));
+    hotkey('d', redirect('<%= @uri.delete(@page) %>'));
 
     // u => open file upload dialog
     hotkey('u', function() { showFileUploadForm(); swfu.selectFiles(); });
@@ -58,8 +58,8 @@
 <%= @page.body(:html) %>
 <p>
   <a href="<%= @uri.edit_page(@page.name) %>">Edit</a> |
-  <a href="<%= @uri.rename_page(@page.name) %>">Rename</a> |
-  <a href="<%= @uri.delete_page(@page.name) %>">Delete</a> |
+  <a href="<%= @uri.rename(@page) %>">Rename</a> |
+  <a href="<%= @uri.delete(@page) %>">Delete</a> |
   <a href="#" onclick="showFileUploadForm(); return false;">Upload a file</a>
 </p>
 

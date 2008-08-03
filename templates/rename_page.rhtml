@@ -1,7 +1,0 @@
-<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.page(@page.name) } %>
-
-<form id="rename-page" action="<%= @uri.rename_page(@page.name) %>" method="post">
-  <input id="new-name" name="new_name" size="20" value="<%= @page.name %>" />
-  <button type="submit">Save</button>
-  or <a href="<%= @uri.page(@page.name) %>">Cancel</a>
-</form>

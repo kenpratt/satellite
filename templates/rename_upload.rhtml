@@ -1,7 +1,0 @@
-<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.list } %>
-
-<form id="rename-upload" action="<%= @uri.rename_upload(@upload.name) %>" method="post">
-  <input id="new-name" name="new_name" size="20" value="<%= @upload.name %>" />
-  <button type="submit">Save</button>
-  or <a href="<%= @uri.list %>">Cancel</a>
-</form>
