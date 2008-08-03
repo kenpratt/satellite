@@ -578,8 +578,12 @@ module Satellite
       end
     end
 
-    class UploadController < controller '/upload'
-      # no get() required -- files are served up directly by Mongrel (at URI "/uploads")
+    class UploadController < controller '/upload', "/upload/#{NAME}"
+      def get(name='')
+        # files are served up directly by Mongrel (at URI "/uploads")
+        redirect Uri.upload(name)
+      end
+      
       def post
         process_upload
       end
