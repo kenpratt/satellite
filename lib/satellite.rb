@@ -382,6 +382,22 @@ module Satellite
           @cancel_uri = @referrer || Uri.list
         end
       end
+      
+      # process a file upload
+      def process_upload
+        log :debug, "Uploaded: #{@input}"
+        filename = @input['Filedata'][:filename].strip
+
+        # save upload
+        upload = Models::Upload.new(filename)
+        upload.save(@input['Filedata'][:tempfile])
+        
+        # allow extra post-save logic
+        yield upload if block_given?
+
+        # respond with plain text (since it's a flash plugin)
+        respond "Thanks!"
+      end
 
       # uri mappings
       # TODO somehow generate these from routing table?
@@ -549,30 +565,19 @@ module Satellite
 
     class PageUploadController < controller "/page/#{NAME}/upload"
       def post(name)
-        log :debug, "Uploaded: #{@input}"
-        filename = @input['Filedata'][:filename].strip
-
-        # save upload
-        upload = Models::Upload.new(filename)
-        upload.save(@input['Filedata'][:tempfile])
-
-        # add upload to current page
-        page = Models::Page.load(name)
-        page.body += "\n\n* {{upload:#{upload.name}}}"
-        page.save
-
-        respond "Thanks!"
+        process_upload do |upload|
+          # add upload to current page
+          page = Models::Page.load(name)
+          page.body += "\n\n* {{upload:#{upload.name}}}"
+          page.save
+        end
       end
     end
 
     class UploadController < controller '/upload'
       # no get() required -- files are served up directly by Mongrel (at URI "/uploads")
-
       def post
-        log :debug, "Uploaded: #{@input}"
-        upload = Models::Upload.new(@input['Filedata'][:filename].strip)
-        upload.save(@input['Filedata'][:tempfile])
-        respond "Thanks!"
+        process_upload
       end
     end
     

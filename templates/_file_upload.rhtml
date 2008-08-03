@@ -1,0 +1,62 @@
+<!-- beginning of file upload code -->
+<script type="text/javascript" src="/static/lib/swfupload.js"></script>
+<script type="text/javascript" src="/static/lib/swfupload.queue.js"></script>
+<script type="text/javascript" src="/static/lib/fileprogress.js"></script>
+<script type="text/javascript" src="/static/lib/handlers.js"></script>
+<script type="text/javascript">
+  var swfu;
+
+  uploadSetup = function() {
+    // u => open file upload dialog
+    hotkey('u', function() { showFileUploadForm(); swfu.selectFiles(); });
+
+    showFileUploadForm = function() {
+      document.getElementById('file-upload').style.display='';
+    };
+
+    localQueueComplete = function(numFilesUploaded) {
+      queueComplete(numFilesUploaded);
+      window.location = "<%= @complete_uri %>";
+    };
+
+    swfu = new SWFUpload({
+      flash_url : "/static/lib/swfupload_f8.swf",
+      upload_url: "<%= @upload_uri %>",
+      file_size_limit : "<%= @conf.max_upload_filesize %> MB",
+      file_types : "*.*",
+      file_types_description : "All Files",
+      file_upload_limit : 100,
+      file_queue_limit : 0,
+      custom_settings : {
+        progressTarget : "upload-progress",
+        cancelButtonId : "cancel-button"
+      },
+      debug: false,
+
+      // The event handler functions are defined in handlers.js
+      file_queued_handler : fileQueued,
+      file_queue_error_handler : fileQueueError,
+      file_dialog_complete_handler : fileDialogComplete,
+      upload_start_handler : uploadStart,
+      upload_progress_handler : uploadProgress,
+      upload_error_handler : uploadError,
+      upload_success_handler : uploadSuccess,
+      upload_complete_handler : uploadComplete,
+      queue_complete_handler : localQueueComplete  // Queue plugin event
+    });
+  };
+</script>
+
+<div id="file-upload" style="display:none">
+  <form id="upload-form" action="<%= @upload_uri %>" method="post" enctype="multipart/form-data">
+    <fieldset class="flash" id="upload-progress">
+      <legend>Upload</legend>
+    </fieldset>
+    <div id="upload-status">0 Files Uploaded</div>
+    <div>
+      <input type="button" value="Upload file (Max <%= @conf.max_upload_filesize %> MB)" onclick="swfu.selectFiles()" style="font-size: 8pt;" />
+      <input id="cancel-button" type="button" value="Cancel All Uploads" onclick="swfu.cancelQueue();" disabled="disabled" style="font-size: 8pt;" />
+    </div>
+  </form>
+</div>
+<!-- end of file upload code -->

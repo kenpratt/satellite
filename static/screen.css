@@ -150,11 +150,11 @@ table.markup-reference td.markup {
 
 #page-list {
   float: left;
-  width: 30em;
+  width: 38em;
 }
 #upload-list {
   float: left;
-  width: 30em;
+  width: 38em;
 }
 #page-list .rename, #upload-list .rename {
   padding: 1px 20px 1px 0;
