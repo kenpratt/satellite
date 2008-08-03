@@ -597,27 +597,33 @@ module Satellite
   end
 
   class << self
+    def sync
+      log :debug, "Synchronizing with master repository."
+      begin
+        Db.sync
+      rescue Db::MergeConflict => e
+        # TODO surface on front-end? already happens on page-load, though...
+        log :warn, "Encountered conflicts during sync. The following files must be merged manually:" +
+          Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
+      rescue Db::ConnectionFailed
+        log :warn, "Failed to connect to master repository during sync operation."
+      end
+      log :debug, "Sync complete."
+    end
+    
     def start
       # kill the whole server if an unexpected exception is encounted in the sync
       Thread.abort_on_exception = true
 
-      # spawn thread to sync content with master repository
+      # perform initial sync (not in thread, so that server waits to start up)
+      sync
+
+      # spawn thread to sync with master repository
       Thread.new do
         while true
-          log :debug, "Synchronizing with master repository."
-
-          begin
-            Db.sync
-          rescue Db::MergeConflict => e
-            # TODO surface on front-end? already happens on page-load, though?
-            log :warn, "Encountered conflicts during sync. The following files must be merged manually:" +
-              Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
-          rescue Db::ConnectionFailed
-            log :warn, "Failed to connect to master repository during sync operation."
-          end
-
           # sleep until next sync
           sleep CONF.sync_frequency
+          sync
         end
       end
 

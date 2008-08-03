@@ -9,7 +9,6 @@
 * (3) fork ruby/git instead of monkeypatching it
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
 * (2) set up deployment (rake/capistrano/vlad)
-* (2) on app startup, don't start server until sync is complete (also: show sync progress?)
 * (1) polish up rspec testing framework
 * (1) satellite-wiki.com
 * (1) log to file instead of stdout
