@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+#
+# Profile Satellite
+#
+
+RESULTS_DIR = File.join(File.expand_path(File.dirname(__FILE__)), '../tmp')
+
+# add library directory to load path
+LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), '../lib')
+$LOAD_PATH.unshift(LIBDIR)
+
+# load profiling configuration
+require 'configuration'
+CONF = Configuration.load(:profiling)
+
+if CONF.auto_reload
+  # turn on app auto-reloading
+  require 'reloader'
+  RELOADER = Framework::Reloader.new(File.join(LIBDIR, 'satellite.rb'))
+else
+  # no auto-reloading
+  require 'satellite'
+end
+
+def start_up
+  # kill the whole server if an unexpected exception is encounted in the sync
+  Thread.abort_on_exception = true
+  Thread.new do
+    Satellite.start
+  end
+
+  puts "waiting for server to start up..."
+  sleep 6
+  puts "done"
+end
+
+def warm_up(n, action)
+  puts "warming up..."
+  n.times { action.call }
+  puts "done"
+end
+
+def profile_with_rubyprof(n, action)
+  require 'ruby-prof'
+
+  puts "starting rubyprof profiler."
+  result = RubyProf.profile do
+    n.times { action.call }
+  end
+  puts "profile complete, printing results."
+
+  File.open("#{RESULTS_DIR}/rubyprof-flat.txt", 'w') do |f|
+    RubyProf::FlatPrinter.new(result).print(f, :min_percent => 1.0)
+  end
+
+  File.open("#{RESULTS_DIR}/rubyprof-graph.txt", 'w') do |f|
+    RubyProf::GraphPrinter.new(result).print(f, :min_percent => 1.0)
+  end
+
+  File.open("#{RESULTS_DIR}/rubyprof-graph.html", 'w') do |f|
+    RubyProf::GraphHtmlPrinter.new(result).print(f, :min_percent => 1.0)
+  end
+end
+
+def profile_with_builtin_profiler(n, action)
+  require 'profiler'
+
+  puts "starting builtin profiler."
+  Profiler__::start_profile
+  n.times { action.call }
+  Profiler__::stop_profile
+  puts "profile complete, printing results."
+
+  File.open("#{RESULTS_DIR}/profiler.txt", 'w') do |f|
+    Profiler__::print_profile(f)
+  end
+end
+
+def main
+  action = lambda { open 'http://localhost:3000/list' }
+  start_up
+  warm_up(1, action)
+  profile_with_rubyprof(1, action)
+  profile_with_builtin_profiler(1, action)
+end
+
+main

@@ -31,3 +31,4 @@
 * del.icio.us integration
 * switch from direct mongrel inheritance to rack adapter
 * take another look at app auto-reloading
+* show sync progress?
