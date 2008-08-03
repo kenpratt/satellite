@@ -47,38 +47,32 @@ module Db
   class << self
 
     def sync
-      r = open_or_create
-      r.pull
-      r.push
+      repo.pull
+      repo.push
     end
 
     def conflicts
-      r = open_or_create
-      r.ls_unmerged_files.keys
+      repo.ls_unmerged_files.keys
     end
 
     def save(file, message)
-      r = open_or_create
-      r.add(quote(file))
-      r.commit(message)
+      repo.add(quote(file))
+      repo.commit(message)
     end
 
     def mv(from, to, message)
-      r = open_or_create
-      r.mv(from, to)
-      r.commit(message)
+      repo.mv(from, to)
+      repo.commit(message)
     end
 
     def rm(file, message)
-      r = open_or_create
-      r.remove(quote(file))
-      r.commit(message)
+      repo.remove(quote(file))
+      repo.commit(message)
     end
 
     def search(str)
-      r = open_or_create
       out = {}
-      r.grep(str, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
+      repo.grep(str, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
       out
     end
   end
@@ -86,6 +80,10 @@ module Db
   private
 
   class << self
+    def repo
+      @@repo ||= open_or_create
+    end
+
     def open_or_create
       begin
         Repo.open
