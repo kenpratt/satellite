@@ -628,9 +628,7 @@ module Satellite
       end
 
       # start server
-      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers).start do |h|
-        h.register('/uploads', Mongrel::DirHandler.new(File.join(CONF.data_dir, Models::UPLOAD_DIR)))
-      end
+      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) }).start
     end
   end
 end

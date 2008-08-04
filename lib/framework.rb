@@ -1,6 +1,6 @@
 # This is the framework for controllers and views extracted from Satellite
 
-%w{ configuration rubygems fileutils tempfile mongrel }.each {|l| require l }
+%w{ configuration rubygems rack fileutils tempfile mongrel }.each {|l| require l }
 
 def escape(s); Mongrel::HttpRequest.escape(s); end
 def unescape(s); Mongrel::HttpRequest.unescape(s); end
@@ -48,6 +48,11 @@ def save_file(input, destination)
   end
 end
 
+def response(status, header={}, &block)
+  Rack::Response.new([], status, header).finish(&block)
+end
+
+
 # Framework classes
 module Framework
 
@@ -58,25 +63,21 @@ module Framework
   class Controller
     def redirect(uri)
       log :info, "Redirecting to #{uri}"
-      @response.start(303) do |head, out|
-        head['Location'] = uri
-      end
+      response(303, { 'Location' => uri })
     end
 
     def render(template, context={})
       log :info, "Rendering #{template}"
-      @response.start(200) do |head, out|
-        head['Content-Type'] = 'text/html'
+      response(200) do |out|
         inner = process_template(template, context)
         context.store(:inner, inner)
         out.write process_template('structure', context)
       end
     end
 
-    def respond(str, code=200)
-      log :info, "Responding with '#{code}: #{str}'"
-      @response.start(code) do |head, out|
-        head['Content-Type'] = 'text/plain'
+    def respond(str, status=200)
+      log :info, "Responding with '#{status}: #{str}'"
+      response(status, { 'Content-Type' => 'text/plain' }) do |out|
         out.write str
       end
     end
@@ -175,38 +176,32 @@ module Framework
 
   # request handler
   # - wraps mongrel HttpHandler and interacts with Router and Controllers
-  class RequestHandler < Mongrel::HttpHandler
+  class RequestHandler
     def initialize(controller_module)
       @router = Router.new(controller_module)
     end
 
-    def process(request, response)
+    def call(env)
       begin
-        http_method, request_uri = request.params['REQUEST_METHOD'], request.params['REQUEST_URI']
-        log :info, "#{http_method} #{request_uri}"
-        controller, args = @router.process(request_uri)
+        log :debug, 'Hit RequestHandler.call()'
+
+        request = Rack::Request.new(env)
+        log :info, "#{request.request_method} #{request.path_info}"
+
+        controller, args = @router.process(request.path_info)
+
+        log :debug, "Referrer: #{request.referrer}"
 
         # TODO instead of injecting instance variables, can we use metaprogramming
-        # to define get/post methods that have response and input as args?
+        # to define get/post methods that have referrer and input as args?
 
         # inject the referring page
-        raw_referrer, raw_host = request.params['HTTP_REFERER'], request.params['HTTP_HOST']
-        if raw_referrer
-          referrer = raw_referrer.sub(/^.+#{raw_host}\//, '/')
-          controller.instance_variable_set("@referrer", referrer)
-          log :debug, "raw referrer: #{raw_referrer} & raw host: #{raw_host} => final referrer: #{referrer}"
-        else
-          controller.instance_variable_set("@referrer", nil)
-        end
+        controller.instance_variable_set("@referrer", request.referrer)
 
-        # inject the response object
-        controller.instance_variable_set("@response", response)
-
-        case http_method.upcase
-        when 'GET'
+        if request.get?
           # call controller get method
           controller.get(*args)
-        when 'POST'
+        elsif request.post?
           begin
             if upload_data = process_file_upload(request)
               # inject input object
@@ -223,19 +218,17 @@ module Framework
             controller.respond(e.to_s, 500)
           end
         else
-          raise ArgumentError.new("Only GET and POST are supported, not '#{http_method}'")
+          raise ArgumentError.new("Only GET and POST are supported, not '#{request.request_method}'")
         end
       rescue Router::NoPathFound
-        log :warn, "No route found for '#{request_uri}', returning 404."
-        response.start(404) do |head, out|
-          head['Content-Type'] = 'text/html'
-          out.write("<pre>404, baby. aint nothing at '#{request_uri}'</pre>")
+        log :warn, "No route found for '#{request.path_info}', returning 404."
+        response(404) do |out|
+          out.write("<pre>404, baby. aint nothing at '#{request.path_info}'</pre>")
         end
       rescue Exception => e
         log :error, "Error occured:\n#{e.class}: #{e.message}\n" +
           e.backtrace.collect {|s| sprintf "%8s\n", s }.join
-        response.start(500) do |head, out|
-          head['Content-Type'] = 'text/html'
+        response(500) do |out|
           out.write '<pre>'
           out.write "#{e.class}: #{e.message}\n"
           out.write e.backtrace.collect {|s| "        #{s}\n" }.join
@@ -334,18 +327,42 @@ module Framework
   # - static requests are handled by mongrel
   # - other requests are handled by RequestHandler
   class Server
-    def initialize(addr, port, controller_module)
-      @addr, @port, @controller_module = addr, port, controller_module
+    def initialize(addr, port, controller_module, static_dirs={})
+      @addr, @port, @controller_module, @static_dirs = addr, port, controller_module, static_dirs
     end
 
+    def application
+      # primary app
+      main = RequestHandler.new(@controller_module)
+      main = Rack::Lint.new(main)
+      
+      # static directories
+      static_dirs = { '/static' => CONF.static_dir }.merge(@static_dirs)
+      static_dirs.each {|uri,path| static_dirs[uri] = Rack::File.new(path) }
+      
+      # uri mappings
+      app = Rack::URLMap.new({ '/' => main }.merge(static_dirs))
+
+      # common middleware
+      app = Rack::CommonLogger.new(app)
+      app = Rack::ShowExceptions.new(app)
+
+      app
+    end
+    
     def start
-      h = Mongrel::HttpServer.new(@addr, @port)
-      h.register('/', RequestHandler.new(@controller_module))
-      h.register('/static', Mongrel::DirHandler.new(CONF.static_dir))
-      h.register('/favicon.ico', Mongrel::Error404Handler.new(''))
-      yield(h)
-      log :info, "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
-      h.run.join
+      begin
+        puts "** Starting #{CONF.app_name}"
+        Rack::Handler::Mongrel.run(application, :Host => @addr, :Port => @port) do |server|
+          puts "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
+          trap(:INT) do
+            server.stop
+            puts "\n** Stopping #{CONF.app_name}"
+          end
+        end
+      rescue Errno::EADDRINUSE => e
+        puts "** Port #{@port} is already in use"
+      end
     end
   end
 end
