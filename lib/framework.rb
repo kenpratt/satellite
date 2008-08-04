@@ -175,7 +175,7 @@ module Framework
   end
 
   # request handler
-  # - wraps mongrel HttpHandler and interacts with Router and Controllers
+  # call(env) method provides Rack interface 
   class RequestHandler
     def initialize(controller_module)
       @router = Router.new(controller_module)
@@ -208,7 +208,7 @@ module Framework
               controller.instance_variable_set("@input", upload_data)
             else
               # inject input object
-              controller.instance_variable_set("@input", hashify(io_to_string(request.body)))
+              controller.instance_variable_set("@input", request.params)
             end
 
             # call controller post method
@@ -234,24 +234,6 @@ module Framework
           out.write e.backtrace.collect {|s| "        #{s}\n" }.join
           out.write '</pre>'
         end
-      end
-    end
-
-    def hashify(str, hash={})
-      puts "hashifying string: #{str}"
-      (str || '').split(/[&;] */n).each { |f| hash.store(*unescape(f).split('=', 2)) }
-      hash
-    end
-
-    def io_to_string(input)
-      if input.is_a?(Tempfile)
-        open(input.path).read
-      elsif input.is_a?(StringIO)
-        input.read
-      elsif input.is_a?(String)
-        input
-      else
-        raise ArgumentError.new("don't know how to read a #{input.class}")
       end
     end
 
