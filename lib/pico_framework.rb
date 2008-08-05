@@ -16,16 +16,18 @@ module PicoFramework
   # - this class should never be subclassed directly! instead, use the
   #   controller(*routes) method
   class Controller
-    # construct a Rack::Response object
-    # block should take output as arg and call output.write
-    def respond(status, header={}, &block)
-      Rack::Response.new([], status, header).finish(&block)
+    class << self
+      # construct a Rack::Response object
+      # block should take output as arg and call output.write
+      def respond(status, header={}, &block)
+        Rack::Response.new([], status, header).finish(&block)
+      end
     end
 
     # 200: render template
     def render(template, context={})
       log :info, "Rendering #{template}"
-      respond(200) do |out|
+      self.class.respond(200) do |out|
         inner = process_template(template, context)
         context.store(:inner, inner)
         out.write process_template('structure', context)
@@ -35,13 +37,13 @@ module PicoFramework
     # 303: redirect
     def redirect(uri)
       log :info, "Redirecting to #{uri}"
-      respond(303, { 'Location' => uri })
+      self.class.respond(303, { 'Location' => uri })
     end
 
     # respond plain-text
     def respond_plaintext(str, status=200)
       log :info, "Responding with '#{status}: #{str}'"
-      respond(status, { 'Content-Type' => 'text/plain' }) do |out|
+      self.class.respond(status, { 'Content-Type' => 'text/plain' }) do |out|
         out.write str
       end
     end
@@ -174,7 +176,7 @@ module PicoFramework
         end
       rescue Router::NoPathFound
         log :warn, "No route found for '#{request.path_info}', returning 404."
-        response(404) do |out|
+        Controller.respond(404) do |out|
           out.write("<pre>404, baby. There ain't nothin' at #{request.path_info}.</pre>")
         end
       end
