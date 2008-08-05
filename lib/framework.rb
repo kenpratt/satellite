@@ -195,30 +195,18 @@ module Framework
         # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have referrer and input as args?
 
-        # inject the referring page
+        # inject referring page
         controller.instance_variable_set("@referrer", request.referrer)
 
+        # inject GET & POST params
+        controller.instance_variable_set("@input", request.params)
+
         if request.get?
-          # call controller get method
           controller.get(*args)
         elsif request.post?
-          begin
-            if upload_data = process_file_upload(request)
-              # inject input object
-              controller.instance_variable_set("@input", upload_data)
-            else
-              # inject input object
-              controller.instance_variable_set("@input", request.params)
-            end
-
-            # call controller post method
-            controller.post(*args)
-          rescue RuntimeError => e
-            log :debug, "Encountered runtime error in POST processing -- returning 500\n#{e.to_s}"
-            controller.respond(e.to_s, 500)
-          end
+          controller.post(*args)
         else
-          raise ArgumentError.new("Only GET and POST are supported, not '#{request.request_method}'")
+          raise ArgumentError.new("Only GET and POST are supported, not #{request.request_method}")
         end
       rescue Router::NoPathFound
         log :warn, "No route found for '#{request.path_info}', returning 404."
@@ -234,72 +222,6 @@ module Framework
           out.write e.backtrace.collect {|s| "        #{s}\n" }.join
           out.write '</pre>'
         end
-      end
-    end
-
-  private
-
-    # process file uploads
-    # this method is borrowed from Camping (but modified to not rely on camping libs)
-    #
-    # Copyright (c) 2006 why the lucky stiff
-    #
-    # Permission is hereby granted, free of charge, to any person obtaining a copy
-    # of this software and associated documentation files (the "Software"), to
-    # deal in the Software without restriction, including without limitation the
-    # rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-    # sell copies of the Software, and to permit persons to whom the Software is
-    # furnished to do so, subject to the following conditions:
-    #
-    # The above copyright notice and this permission notice shall be included in
-    # all copies or substantial portions of the Software.
-    #
-    # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-    # THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-    # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-    # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-    def process_file_upload(request)
-      qs = {}
-      @in = request.body
-      if %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)|n.match(request.params['CONTENT_TYPE'])
-        b = /(?:\r?\n|\A)#{Regexp::quote("--#$1")}(?:--)?\r$/
-        until @in.eof?
-          fh={}
-          for l in @in
-            case l
-            when "\r\n": break
-            when /^Content-Disposition: form-data;/
-              $'.scan(/(?:\s(\w+)="([^"]+)")/).each do |key,value|
-                fh[key.to_sym] = value
-              end
-            when /^Content-Type: (.+?)(\r$|\Z)/m
-              log :info, "=> fh[type] = #$1"
-              fh[:type] = $1
-            end
-          end
-          fn=fh[:name]
-          o=if fh[:filename]
-            o=fh[:tempfile]=Tempfile.new(:C)
-            o.binmode
-          else
-            fh=""
-          end
-          while l=@in.read(16384)
-            if l=~b
-              o<<$`.chomp
-              @in.seek(-$'.size,IO::SEEK_CUR)
-              break
-            end
-            o<<l
-          end
-          qs[fn]=fh if fn
-          fh[:tempfile].rewind if fh.is_a? Hash
-        end
-        qs
-      else
-        nil
       end
     end
   end
