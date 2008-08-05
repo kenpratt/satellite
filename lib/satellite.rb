@@ -1,12 +1,11 @@
 # This is the main Satellite app. All business logic is contained here.
 # - configuration is in config.rb
-# - controller and view framework is in framework.rb
-# - "database" aka Git interface is in db.rb
+# - controller and view framework aka PicoFramework is in pico_framework.rb
+# - "database" (Git interface) aka GitDB is in git_db.rb
 
-%w{ configuration framework db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
+%w{ configuration pico_framework git_db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
 
 module Satellite
-
   # model definitions go here
   module Models
     PAGE_DIR = 'pages'
@@ -43,7 +42,7 @@ module Satellite
           if exists?(name)
             self.new(name)
           else
-            raise Db::FileNotFound.new("#{self} #{name} does not exist")
+            raise GitDb::FileNotFound.new("#{self} #{name} does not exist")
           end
         end
 
@@ -90,8 +89,8 @@ module Satellite
         begin
           raise ArgumentError.new("Saved name can't be blank") unless name.any?
           save_file(input, filepath)
-          Db.save(local_filepath, "Satellite: saving #{name}")
-        rescue Db::ContentNotModified
+          GitDb.save(local_filepath, "Satellite: saving #{name}")
+        rescue GitDb::ContentNotModified
           log :debug, "Hunk.save(): #{name} wasn't modified since last save"
         end
       end
@@ -100,11 +99,11 @@ module Satellite
         old_name = name
         self.name = new_name
         raise ArgumentError.new("New name can't be blank") unless name.any?
-        Db.mv(klass.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
+        GitDb.mv(klass.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
       end
 
       def delete!
-        Db.rm(local_filepath, "Satellite: deleting #{name}")
+        GitDb.rm(local_filepath, "Satellite: deleting #{name}")
       end
 
       def filename; klass.filename(name); end
@@ -138,7 +137,7 @@ module Satellite
 
         def search(query)
           out = {}
-          Db.search(query).each do |file,matches|
+          GitDb.search(query).each do |file,matches|
             page = Page.new(parse_name(file))
             out[page] = matches.collect do |line,text|
               text = WikiMarkup.process(text)
@@ -150,14 +149,14 @@ module Satellite
         end
 
         def conflicts
-          Db.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
+          GitDb.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
         end
 
         def load(name)
           if exists?(name)
             Page.new(name, open(filepath(name)).read)
           else
-            raise Db::FileNotFound.new("Page #{name} does not exist")
+            raise GitDb::FileNotFound.new("Page #{name} does not exist")
           end
         end
 
@@ -303,7 +302,7 @@ module Satellite
         # uploads are like: {{upload:foo.ext}}
         def process_wiki_links(str)
           str.gsub(UPLOAD_LINK_FMT) do |s|
-            name, uri = $1, Framework::Controller::Uri.upload($1)
+            name, uri = $1, PicoFramework::Controller::Uri.upload($1)
             notextile do
               if Upload.exists?(name)
                 "<a href=\"#{uri}\">#{name}</a>"
@@ -312,7 +311,7 @@ module Satellite
               end
             end
           end.gsub(WIKI_LINK_FMT) do |s|
-            name, uri = $1, Framework::Controller::Uri.page($1)
+            name, uri = $1, PicoFramework::Controller::Uri.page($1)
             notextile do
               if Page.exists?(name)
                 "<a href=\"#{uri}\">#{name}</a>"
@@ -351,7 +350,6 @@ module Satellite
 
   # controllers definitions go here
   module Controllers
-
     VALID_URI_CHARS = '\w \+\%\-\.'
     NAME = "([#{VALID_URI_CHARS}]+)"
 
@@ -359,7 +357,7 @@ module Satellite
     SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
 
     # reopen framework controller class to provide some app-specific logic
-    class Framework::Controller
+    class PicoFramework::Controller
       # pass title and uri mappings into templates too
       alias :original_render :render
       def render(template, title, params={})
@@ -461,7 +459,7 @@ module Satellite
         # load page
         begin
           page = Models::Page.load(name)
-        rescue Db::FileNotFound
+        rescue GitDb::FileNotFound
           page = nil
         end
 
@@ -600,12 +598,12 @@ module Satellite
     def sync
       log :debug, "Synchronizing with master repository."
       begin
-        Db.sync
-      rescue Db::MergeConflict => e
+        GitDb.sync
+      rescue GitDb::MergeConflict => e
         # TODO surface on front-end? already happens on page-load, though...
         log :warn, "Encountered conflicts during sync. The following files must be merged manually:" +
-          Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
-      rescue Db::ConnectionFailed
+          GitDb.conflicts.collect {|c| "  * #{c}" }.join("\n")
+      rescue GitDb::ConnectionFailed
         log :warn, "Failed to connect to master repository during sync operation."
       end
       log :debug, "Sync complete."
@@ -628,7 +626,7 @@ module Satellite
       end
 
       # start server
-      Framework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) }).start
+      PicoFramework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) }).start
     end
   end
 end

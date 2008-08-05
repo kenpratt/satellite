@@ -36,7 +36,7 @@ def quote(s)
 end
 
 # wrapper for ruby/git bridge
-module Db
+module GitDb
 
   class ConfigurationError < RuntimeError; end
   class FileNotFound < RuntimeError; end
@@ -158,7 +158,7 @@ module Db
           # no internet or bad host address
           raise ConnectionFailed.new
         else
-          puts "Unexpected error in Db.push: \"#{e.message}\""
+          puts "Unexpected error in GitDb::Repo.push: \"#{e.message}\""
           raise e
         end
       end
@@ -186,7 +186,7 @@ module Db
           # no internet or bad host address
           raise ConnectionFailed.new
         else
-          puts "Unexpected error in Db.pull: \"#{e.message}\""
+          puts "Unexpected error in GitDb::Repo.pull: \"#{e.message}\""
           raise e
         end
       end
@@ -199,10 +199,10 @@ module Db
         case e.message
         when /unable to create '(.+index\.lock)'/
           # race condition, deleting the lock file should fix it
-          puts "Error in Db.add: Need to delete #{$1}"
+          puts "Error in GitDb::Repo.add: Need to delete #{$1}"
           raise e
         else
-          puts "Unexpected error in Db.add: \"#{e.message}\""
+          puts "Unexpected error in GitDb::Repo.add: \"#{e.message}\""
           raise e
         end
       end

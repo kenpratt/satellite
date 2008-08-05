@@ -5,16 +5,16 @@
 
 $LOAD_PATH.unshift(File.join(File.expand_path(File.dirname(__FILE__)), '../lib'))
 
-require 'db'
+require 'git_db'
 
 # use production configuration
 CONF = Configuration.load(:production)
 
 # sync to master repository
 begin
-  Db.sync
-rescue Db::MergeConflict => e
+  GitDb.sync
+rescue GitDb::MergeConflict => e
   puts "Error: Encountered conflicts during sync. The following files must be merged manually:"
-  puts Db.conflicts.collect {|c| "  * #{c}" }.join("\n")
+  puts GitDb.conflicts.collect {|c| "  * #{c}" }.join("\n")
   exit 1
 end

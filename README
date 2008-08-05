@@ -17,17 +17,16 @@ password-less method of committing to the master repository.
 == Features
 
 * Usual wiki features such as creating, updating, renaming, deleting pages
-* Textile page formatting
-* Easy inter-page linking: {{Page Name}}
-* Auto-linking of bare URIs
+* Textile page formatting with a few bonuses
 * Automated synchronization & merging between Satellite clients
-* Hotkeys (e for edit)
+* Hotkeys
+* File uploads
+* Code syntax higlighting
 
 == Installation
 
 TODO need to install ssh keys for passwordless git syncs
 
-$ sudo gem install mongrel git metaid erubis RedCloth coderay
+$ sudo gem install rack mongrel git metaid erubis RedCloth coderay
 $ cd path/to/satellite
 $ bin/start_satellite
-

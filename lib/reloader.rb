@@ -20,7 +20,7 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-module Framework
+
 # == The Camping Reloader
 #
 # Camping apps are generally small and predictable.  Many Camping apps are
@@ -146,5 +146,4 @@ class Reloader
     def view_source
         File.read(@script)
     end
-end
 end

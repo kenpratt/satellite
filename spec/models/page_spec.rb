@@ -57,7 +57,7 @@ module Satellite::Models
 
     it 'should not be able to be renamed before it is saved' do
       @page = Page.new('unsaved')
-      lambda { @page.rename('still_unsaved') }.should raise_error(Db::FileNotFound)
+      lambda { @page.rename('still_unsaved') }.should raise_error(GitDb::FileNotFound)
     end
 
     it 'should be able to be saved' do
@@ -72,7 +72,7 @@ module Satellite::Models
 
     it 'should not be able to be loaded' do
       @page = Page.new('not saved yet')
-      lambda { Page.load(@page.name) }.should raise_error(Db::FileNotFound)
+      lambda { Page.load(@page.name) }.should raise_error(GitDb::FileNotFound)
     end
   end
 

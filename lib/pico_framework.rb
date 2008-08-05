@@ -1,93 +1,59 @@
-# This is the framework for controllers and views extracted from Satellite
+# PicoFramework is an itty-bitty framework with a Rack interface. Like, really
+# small. A trillionth the size of giants like Rails and Merb.
+#
+# It supports controllers and rhtml templates and file uploads and that is
+# pretty much it.
+#
+# By default, it uses mongrel, but it would be *super* easy to use any other
+# Ruby app server (just change the Rack handler in PicoFramwork::Server.start).
+#
 
 %w{ configuration rubygems rack fileutils tempfile mongrel }.each {|l| require l }
 
-def escape(s); Mongrel::HttpRequest.escape(s); end
-def unescape(s); Mongrel::HttpRequest.unescape(s); end
-
-# never subclass Controller directly! instead, use this method which creates a
-# subclass with embedded route information
-def controller(*routes)
-  c = Class.new(Framework::Controller)
-  c.class_eval { define_method(:routes) { routes } }
-  c
-end
-
-def log_level(level)
-  case level
-  when :error : 1
-  when :warn  : 2
-  when :info  : 3
-  when :debug : 4
-  else          5
-  end
-end
-
-def log(level, msg)
-  if (log_level(CONF.log_level) >= log_level(level))
-    puts "[#{level.to_s.upcase}] #{msg}"
-  end
-end
-
-def save_file(input, destination)
-  log :debug, "Saving #{input} to #{destination}"
-
-  # create the destination directory if it doesn't already exist
-  dir = File.dirname(destination)
-  FileUtils.mkdir_p(dir) unless File.exists?(dir)
-
-  # copy the input to the destination file
-  if input.is_a?(Tempfile)
-    FileUtils.cp(input.path, destination)
-  elsif input.is_a?(StringIO)
-    File.open(destination, 'w') { |f| f << input.read }
-  elsif input.is_a?(String)
-    File.open(destination, 'w') { |f| f << input }
-  else
-    raise ArgumentError.new("don't know how to save a #{input.class}")
-  end
-end
-
-def response(status, header={}, &block)
-  Rack::Response.new([], status, header).finish(&block)
-end
-
-
-# Framework classes
-module Framework
-
+module PicoFramework
   # base controller class
   # - methods extending this should implement get and/or post methods
   # - this class should never be subclassed directly! instead, use the
   #   controller(*routes) method
   class Controller
-    def redirect(uri)
-      log :info, "Redirecting to #{uri}"
-      response(303, { 'Location' => uri })
+    # construct a Rack::Response object
+    # block should take output as arg and call output.write
+    def respond(status, header={}, &block)
+      Rack::Response.new([], status, header).finish(&block)
     end
 
+    # 200: render template
     def render(template, context={})
       log :info, "Rendering #{template}"
-      response(200) do |out|
+      respond(200) do |out|
         inner = process_template(template, context)
         context.store(:inner, inner)
         out.write process_template('structure', context)
       end
     end
 
-    def respond(str, status=200)
+    # 303: redirect
+    def redirect(uri)
+      log :info, "Redirecting to #{uri}"
+      respond(303, { 'Location' => uri })
+    end
+
+    # respond plain-text
+    def respond_plaintext(str, status=200)
       log :info, "Responding with '#{status}: #{str}'"
-      response(status, { 'Content-Type' => 'text/plain' }) do |out|
+      respond(status, { 'Content-Type' => 'text/plain' }) do |out|
         out.write str
       end
     end
 
+    # process an erubis template with the provided context
     def process_template(template, context={})
       markup = open(template_path(template)).read
       partial_function = lambda {|*a| t, h = *a; process_template("_#{t}", h || {}) }
       Erubis::Eruby.new(markup).evaluate(context.merge({ :partial => partial_function }))
     end
 
+    # template path is configurable
     def template_path(template)
       File.join(CONF.template_dir, "#{template}.rhtml")
     end
@@ -112,11 +78,9 @@ module Framework
         controller_module.constants.map do |c|
           eval("#{controller_module}::#{c}")
         end.select do |c|
-          c.kind_of? Class
+          c.kind_of?(Class) && c.ancestors.include?(Controller)
         end.map do |c|
           c.new
-        end.select do |c|
-          c.kind_of? Controller
         end
       end
 
@@ -217,15 +181,14 @@ module Framework
     end
   end
 
-  # server
-  # - defines a mongrel http server for the app
-  # - static requests are handled by mongrel
-  # - other requests are handled by RequestHandler
+  # runnable server class
+  # expects RequestHandler to implement teh Rack interface (a call(env) method)
   class Server
     def initialize(addr, port, controller_module, static_dirs={})
       @addr, @port, @controller_module, @static_dirs = addr, port, controller_module, static_dirs
     end
 
+    # set up the Rack stack to use (depends on configuration)
     def application
       # primary app
       main = RequestHandler.new(@controller_module)
@@ -245,6 +208,7 @@ module Framework
       app
     end
     
+    # start app server. uses mongrel by default, but that's easy to change.
     def start
       begin
         puts "** Starting #{CONF.app_name}"
@@ -259,5 +223,65 @@ module Framework
         puts "** Port #{@port} is already in use"
       end
     end
+  end
+
+  # simple logger
+  class Logger
+    class << self
+      def log(level, msg)
+        if (log_level(CONF.log_level) >= log_level(level))
+          puts "[#{level.to_s.upcase}] #{msg}"
+        end
+      end
+      
+      def log_level(level)
+        case level
+        when :error : 1
+        when :warn  : 2
+        when :info  : 3
+        when :debug : 4
+        else          5
+        end
+      end
+    end
+  end
+end
+
+# some kernel-level helper methods
+
+# shortcuts for URI escaping
+def escape(s); Rack::Utils.escape(s); end
+def unescape(s); Rack::Utils.unescape(s); end
+
+# never subclass Controller directly! instead, use this method which creates a
+# subclass with embedded route information
+def controller(*routes)
+  c = Class.new(PicoFramework::Controller)
+  c.class_eval { define_method(:routes) { routes } }
+  c
+end
+
+# shorcut for easy logging
+def log(level, msg)
+  PicoFramework::Logger.log(level, msg)
+end
+
+# save some input (string, tempfile, etc) to the filesystem
+def save_file(input, destination)
+  log :debug, "Saving #{input} to #{destination}"
+
+  # create the destination directory if it doesn't already exist
+  dir = File.dirname(destination)
+  FileUtils.mkdir_p(dir) unless File.exists?(dir)
+
+  # copy the input to the destination file
+  if input.is_a?(Tempfile)
+    FileUtils.cp(input.path, destination)
+  elsif input.is_a?(StringIO)
+    File.open(destination, 'w') { |f| f << input.read }
+  elsif input.is_a?(String)
+    File.open(destination, 'w') { |f| f << input }
+  else
+    raise ArgumentError.new("don't know how to save a #{input.class}")
   end
 end

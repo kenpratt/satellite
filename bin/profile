@@ -16,7 +16,7 @@ CONF = Configuration.load(:profiling)
 if CONF.auto_reload
   # turn on app auto-reloading
   require 'reloader'
-  RELOADER = Framework::Reloader.new(File.join(LIBDIR, 'satellite.rb'))
+  RELOADER = Reloader.new(File.join(LIBDIR, 'satellite.rb'))
 else
   # no auto-reloading
   require 'satellite'

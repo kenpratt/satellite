@@ -18,8 +18,6 @@
 * (1) satellite-wiki.com
 * (1) log to file instead of stdout
 * (1) prettier 404 page (just render 404 error into template)
-* (1) replace app reloader with Rack::Reloader
-* (1) rename framework to 'pico' or 'picoframework'
 * (1) extend URLMap to provide regex mapping? (and gid rid of the ugly uploads/ hack?)
 
 === Soon (maybe 1.0, maybe later)
@@ -28,6 +26,7 @@
 * page history view
 * revert page to some previous version
 * extend search to search upload names (and upload content?)
+* replace custom app reloader with Rack::Reloader
 
 === Later?
 
