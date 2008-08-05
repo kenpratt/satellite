@@ -2,6 +2,11 @@
 
 == Tasks
 
+=== Bugs
+
+* list page: sort puts lowercase items at the end -- change to mixed case alphabetical
+* app won't start up while offline (due to the "feature" i added of waiting for sync before server starts)
+
 === Now (pre-1.0) (priority in brackets)
 
 * (5) make a logo! (and favicon to match)
@@ -12,6 +17,7 @@
 * (1) polish up rspec testing framework
 * (1) satellite-wiki.com
 * (1) log to file instead of stdout
+* (1) prettier 404 page (just render 404 error into template)
 
 === Soon (maybe 1.0, maybe later)
 

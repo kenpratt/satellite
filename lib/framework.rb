@@ -211,16 +211,7 @@ module Framework
       rescue Router::NoPathFound
         log :warn, "No route found for '#{request.path_info}', returning 404."
         response(404) do |out|
-          out.write("<pre>404, baby. aint nothing at '#{request.path_info}'</pre>")
-        end
-      rescue Exception => e
-        log :error, "Error occured:\n#{e.class}: #{e.message}\n" +
-          e.backtrace.collect {|s| sprintf "%8s\n", s }.join
-        response(500) do |out|
-          out.write '<pre>'
-          out.write "#{e.class}: #{e.message}\n"
-          out.write e.backtrace.collect {|s| "        #{s}\n" }.join
-          out.write '</pre>'
+          out.write("<pre>404, baby. There ain't nothin' at #{request.path_info}.</pre>")
         end
       end
     end
