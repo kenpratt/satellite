@@ -122,7 +122,7 @@ module GitDb
         'remote.origin.url' => CONF.master_repository_uri
       }.each do |k, v|
         if (old = @git.config(k)) != v
-          log :info, "Updating configuration: changing #{k} from '#{old}' to '#{v}'"
+          log.info "Updating GitDB configuration: Changing #{k} from '#{old}' to '#{v}'"
           @git.config(k, v)
         end
       end

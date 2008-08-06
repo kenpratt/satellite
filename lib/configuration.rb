@@ -21,12 +21,14 @@ class Configuration
   attr_accessor :conf_dir
   attr_accessor :template_dir
   attr_accessor :static_dir
+  attr_accessor :log_dir
 
   # path of folder to store wiki app data in (this folder will be created)
   attr_accessor :data_dir
 
-  # logging level (:error, :warn, :info, :debug)
+  # logging level (:fatal > :error > :warn > :info > :debug), log file name
   attr_accessor :log_level
+  attr_accessor :log_file_name
 
   # automatically reload app when app files change? (for development)
   attr_accessor :auto_reload
@@ -46,9 +48,11 @@ class Configuration
     self.app_dir                = File.join(File.dirname(File.expand_path(__FILE__)), '../')
     self.conf_dir               = File.join(app_dir, 'conf')
     self.template_dir           = File.join(app_dir, 'templates')
-    self.data_dir               = File.join(app_dir, 'data')
     self.static_dir             = File.join(app_dir, 'static')
-    self.log_level              = :warn
+    self.log_dir                = File.join(app_dir, 'log')
+    self.data_dir               = File.join(app_dir, 'data')
+    self.log_level              = :info
+    self.log_file_name          = 'app.log'
     self.auto_reload            = false
     self.max_upload_filesize    = 200
   end
@@ -63,9 +67,9 @@ class Configuration
   def to_s
     [
       :app_name, :server_ip, :server_port, :master_repository_uri,
-      :sync_frequency, :user_name, :user_email, :app_dir, :conf_dir, 
-      :static_dir, :template_dir, :data_dir, :log_level, :auto_reload, 
-      :max_upload_filesize
+      :user_name, :user_email, :sync_frequency, :app_dir, :conf_dir,
+      :template_dir, :static_dir, :log_dir, :data_dir, :log_level,
+      :log_file_name, :auto_reload, :max_upload_filesize
     ].collect do |c|
       sprintf "%12-s => %s", c.to_s, send(c).to_s
     end.join("\n")

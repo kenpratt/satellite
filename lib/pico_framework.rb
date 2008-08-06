@@ -8,7 +8,7 @@
 # Ruby app server (just change the Rack handler in PicoFramwork::Server.start).
 #
 
-%w{ configuration rubygems rack fileutils tempfile mongrel }.each {|l| require l }
+%w{ configuration rubygems rack mongrel fileutils tempfile logger }.each {|l| require l }
 
 module PicoFramework
   # base controller class
@@ -26,7 +26,7 @@ module PicoFramework
 
     # 200: render template
     def render(template, context={})
-      log :info, "Rendering #{template}"
+      log.debug "Rendering #{template}"
       self.class.respond(200) do |out|
         inner = process_template(template, context)
         context.store(:inner, inner)
@@ -36,13 +36,13 @@ module PicoFramework
 
     # 303: redirect
     def redirect(uri)
-      log :info, "Redirecting to #{uri}"
+      log.debug "Redirecting to #{uri}"
       self.class.respond(303, { 'Location' => uri })
     end
 
     # respond plain-text
     def respond_plaintext(str, status=200)
-      log :info, "Responding with '#{status}: #{str}'"
+      log.debug "Responding with '#{status}: #{str}'"
       self.class.respond(status, { 'Content-Type' => 'text/plain' }) do |out|
         out.write str
       end
@@ -91,10 +91,10 @@ module PicoFramework
       end
 
       def extract_arguments(uri, regex)
-        log :debug, "Extracting arguments from '#{uri}'"
-        log :debug, "  Attempting to match #{regex}"
+        log.debug "Extracting arguments from '#{uri}'"
+        log.debug "  Attempting to match #{regex}"
         if m = regex.match(uri)
-          log :debug, "    Found #{m.size - 1} arguments"
+          log.debug "    Found #{m.size - 1} arguments"
           return m.to_a[1..-1].collect {|a| unescape(a) }
         end
         []
@@ -104,7 +104,7 @@ module PicoFramework
     # add the given controller instances to the routing table
     def add_controllers(controllers)
       @route_map ||= {}
-      log :info, "Router: adding controllers to route map: #{controllers.join(',')}"
+      log.debug "Router: adding controllers to route map: #{controllers.join(',')}"
       controllers.each { |c| c.routes.each {|r| @route_map[r] = c } }
       build_index
     end
@@ -118,20 +118,20 @@ module PicoFramework
     def process(uri)
       # check if necessary to auto-reload app on each request (if turned on in config)
       if CONF.auto_reload
-        log :debug, "Checking if app needs to be reloaded"
+        log.debug "Checking if app needs to be reloaded"
         RELOADER.reload_app
       end
 
       # routing
-      log :debug, "Router: attempting to match #{uri}"
+      log.debug "Router: attempting to match #{uri}"
       @routes.each do |r|
         regex = Router.regex(r)
-        log :debug, "  Trying #{regex}"
+        log.debug "  Trying #{regex}"
         if regex.match(uri)
           # route r is correct
           controller = @route_map[r]
           args = Router.extract_arguments(uri, regex)
-          log :debug, "    Success! controller is #{controller}, args are #{args.join(', ')}"
+          log.debug "    Success! controller is #{controller}, args are #{args.join(', ')}"
           return controller, args
         end
       end
@@ -149,14 +149,14 @@ module PicoFramework
 
     def call(env)
       begin
-        log :debug, 'Hit RequestHandler.call()'
+        log.debug 'Hit RequestHandler.call()'
 
         request = Rack::Request.new(env)
-        log :info, "#{request.request_method} #{request.path_info}"
+        log.debug "#{request.request_method} #{request.path_info}"
 
         controller, args = @router.process(request.path_info)
 
-        log :debug, "Referrer: #{request.referrer}"
+        log.debug "Referrer: #{request.referrer}"
 
         # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have referrer and input as args?
@@ -175,7 +175,7 @@ module PicoFramework
           raise ArgumentError.new("Only GET and POST are supported, not #{request.request_method}")
         end
       rescue Router::NoPathFound
-        log :warn, "No route found for '#{request.path_info}', returning 404."
+        log.warn "No route found for '#{request.path_info}', returning 404."
         Controller.respond(404) do |out|
           out.write("<pre>404, baby. There ain't nothin' at #{request.path_info}.</pre>")
         end
@@ -188,6 +188,12 @@ module PicoFramework
   class Server
     def initialize(addr, port, controller_module, static_dirs={})
       @addr, @port, @controller_module, @static_dirs = addr, port, controller_module, static_dirs
+
+      # initialize logger
+      FileUtils::mkdir_p CONF.log_dir
+      logger = Logger.new(File.join(CONF.log_dir, CONF.log_file_name))
+      logger.level = Logger.const_get(CONF.log_level.to_s.upcase)
+      PicoFramework.logger = logger
     end
 
     # set up the Rack stack to use (depends on configuration)
@@ -204,7 +210,7 @@ module PicoFramework
       app = Rack::URLMap.new({ '/' => main }.merge(static_dirs))
 
       # common middleware
-      app = Rack::CommonLogger.new(app)
+      app = Rack::CommonLogger.new(app, PicoFramework.logger)
       app = Rack::ShowExceptions.new(app)
 
       app
@@ -227,24 +233,13 @@ module PicoFramework
     end
   end
 
-  # simple logger
-  class Logger
-    class << self
-      def log(level, msg)
-        if (log_level(CONF.log_level) >= log_level(level))
-          puts "[#{level.to_s.upcase}] #{msg}"
-        end
-      end
-      
-      def log_level(level)
-        case level
-        when :error : 1
-        when :warn  : 2
-        when :info  : 3
-        when :debug : 4
-        else          5
-        end
-      end
+  class << self
+    def logger=(new_logger)
+      @@logger = new_logger
+    end
+
+    def logger
+      @@logger
     end
   end
 end
@@ -263,14 +258,14 @@ def controller(*routes)
   c
 end
 
-# shorcut for easy logging
-def log(level, msg)
-  PicoFramework::Logger.log(level, msg)
+# shortcut to logger
+def log
+  PicoFramework.logger
 end
 
 # save some input (string, tempfile, etc) to the filesystem
 def save_file(input, destination)
-  log :debug, "Saving #{input} to #{destination}"
+  log.debug "Saving #{input} to #{destination}"
 
   # create the destination directory if it doesn't already exist
   dir = File.dirname(destination)

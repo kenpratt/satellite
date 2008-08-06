@@ -91,7 +91,7 @@ module Satellite
           save_file(input, filepath)
           GitDb.save(local_filepath, "Satellite: saving #{name}")
         rescue GitDb::ContentNotModified
-          log :debug, "Hunk.save(): #{name} wasn't modified since last save"
+          log.debug "Hunk.save(): #{name} wasn't modified since last save"
         end
       end
 
@@ -383,7 +383,7 @@ module Satellite
       
       # process a file upload
       def process_upload
-        log :debug, "Uploaded: #{@input}"
+        log.debug "Uploaded: #{@input}"
         filename = @input['Filedata'][:filename].strip
 
         # save upload
@@ -410,7 +410,7 @@ module Satellite
             when Models::Upload
               "/upload/#{escape(hunk.name)}/rename"
             else
-              log :error, "#{hunk} is neither a Page nor an Upload"
+              log.error "#{hunk} is neither a Page nor an Upload"
               ""
             end
           end
@@ -421,7 +421,7 @@ module Satellite
             when Models::Upload
               "/upload/#{escape(hunk.name)}/delete"
             else
-              log :error, "#{hunk} is neither a Page nor an Upload"
+              log.error "#{hunk} is neither a Page nor an Upload"
               ""
             end
           end
@@ -556,7 +556,7 @@ module Satellite
     class SearchController < controller '/search', "/search\\?query=#{SEARCH_STRING}"
       def get(query=nil)
         if query
-          log :debug, "searched for: #{query}"
+          log.debug "searched for: #{query}"
           results = Models::Page.search(query)
           render 'search', "Searched for: #{query}", :query => query, :results => results
         else
@@ -596,24 +596,27 @@ module Satellite
 
   class << self
     def sync
-      log :debug, "Synchronizing with master repository."
+      log.info "Synchronizing with master repository."
       begin
         GitDb.sync
       rescue GitDb::MergeConflict => e
         # TODO surface on front-end? already happens on page-load, though...
-        log :warn, "Encountered conflicts during sync. The following files must be merged manually:" +
+        log.warn "Encountered conflicts during sync. The following files must be merged manually:" +
           GitDb.conflicts.collect {|c| "  * #{c}" }.join("\n")
       rescue GitDb::ConnectionFailed
-        log :warn, "Failed to connect to master repository during sync operation."
+        log.warn "Failed to connect to master repository during sync operation."
       end
-      log :debug, "Sync complete."
+      log.info "Sync complete."
     end
 
-    def server
+    def create_server
       PicoFramework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) })
     end
     
     def start
+      # first, create the server (this sets up the logger, among other things)
+      server = create_server
+
       # kill the whole server if an unexpected exception is encounted in the sync
       Thread.abort_on_exception = true
 
