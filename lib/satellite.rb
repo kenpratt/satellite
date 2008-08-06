@@ -608,6 +608,10 @@ module Satellite
       end
       log :debug, "Sync complete."
     end
+
+    def server
+      PicoFramework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) })
+    end
     
     def start
       # kill the whole server if an unexpected exception is encounted in the sync
@@ -626,7 +630,7 @@ module Satellite
       end
 
       # start server
-      PicoFramework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) }).start
+      server.start
     end
   end
 end
