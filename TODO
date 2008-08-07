@@ -15,11 +15,11 @@
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) polish up rspec testing framework
 * (1) satellite-wiki.com
-* (1) log to file instead of stdout
 * (1) prettier 404 page (just render 404 error into template)
 * (1) extend URLMap to provide regex mapping? (and gid rid of the ugly uploads/ hack?)
 * (1) refactor config to be a member variable instead of a constant (like logger)
 * (1) speed up search by limiting to pages/ dir only?
+* (1) separate page sync and upload sync, since the latter is so much slower and less likely to cause merge issues?
 
 === Soon (maybe 1.0, maybe later)
 
@@ -38,6 +38,4 @@
 * multiple remote repository support (instead of master/slave)
 * tagging
 * del.icio.us integration
-* switch from direct mongrel inheritance to rack adapter
-* take another look at app auto-reloading
 * show sync progress?
