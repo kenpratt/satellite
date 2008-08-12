@@ -11,6 +11,7 @@
 
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
+* (4) create "repack_locally" script to pull, repack, and rsync pack files to server
 * (3) fork ruby/git instead of monkeypatching it
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
 * (2) set up deployment (rake/capistrano/vlad)
@@ -19,6 +20,8 @@
 * (1) log to file instead of stdout
 * (1) prettier 404 page (just render 404 error into template)
 * (1) extend URLMap to provide regex mapping? (and gid rid of the ugly uploads/ hack?)
+* (1) refactor config to be a member variable instead of a constant (like logger)
+* (1) speed up search by limiting to pages/ dir only?
 
 === Soon (maybe 1.0, maybe later)
 
