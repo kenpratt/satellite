@@ -11,7 +11,6 @@
 
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (4) create "repack_locally" script to pull, repack, and rsync pack files to server
 * (3) fork ruby/git instead of monkeypatching it
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
 * (2) set up deployment (rake/capistrano/vlad)

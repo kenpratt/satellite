@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+#
+# Repack the wiki content reposiroty and upload the pack files to the server
+#
+# 64-bit servers with small amounts of RAM (for example, a VPS) have serious 
+# issues packing large files (like file uploads). this packing is triggered
+# on clone operations. hence, a clone of an existing wiki with large files 
+# uploaded that is hosted on such a server will trigger the repacking issue
+# (and cause the server to suck up all available memory and start thrashing)
+#
+# While Git developers come up with a clean solution, this script will repack
+# the repository locally and then copy up the pack files
+#
+# IMPORTANT: This script assumes that the remote repository is bare!
+#
+
+# add library directory to load path
+LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), '../lib')
+$LOAD_PATH.unshift(LIBDIR)
+
+require 'git_db'
+
+# use production configuration
+CONF = Configuration.load(:production)
+
+# sync to master repository
+puts "Synchronizing with master repository"
+GitDb.sync
+
+# repack locally
+puts "Repacking local repository"
+GitDb.repack
+
+# get server from config
+if CONF.master_repository_uri =~ /^[^\/]+\/\/([^\/]+)(\/.*)$/
+  server = "#{$1}:#{$2}"
+  pack_dir = File.join(CONF.data_dir, '.git/objects/pack')
+
+  puts "Uploading pack files"
+  `rsync -r --delete #{pack_dir} #{server}/objects/`
+else
+  puts "Couldn't parse repository uri: #{CONF.master_repository_uri}"
+end

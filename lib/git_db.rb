@@ -75,6 +75,10 @@ module GitDb
       repo.grep(str, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
       out
     end
+
+    def repack()
+      repo.repack
+    end
   end
 
   private
