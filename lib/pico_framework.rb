@@ -211,7 +211,7 @@ module PicoFramework
 
       # common middleware
       app = Rack::CommonLogger.new(app, PicoFramework.logger)
-      app = Rack::ShowExceptions.new(app)
+      app = Rack::ShowExceptions.new(app) if CONF.prettify_exceptions
 
       app
     end

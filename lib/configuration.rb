@@ -33,6 +33,9 @@ class Configuration
   # automatically reload app when app files change? (for development)
   attr_accessor :auto_reload
 
+  # turn exceptions into pretty html page
+  attr_accessor :prettify_exceptions
+
   # maximum upload file size (in MB)
   attr_accessor :max_upload_filesize
 
@@ -54,6 +57,7 @@ class Configuration
     self.log_level              = :info
     self.log_file_name          = 'app.log'
     self.auto_reload            = false
+    self.prettify_exceptions    = true
     self.max_upload_filesize    = 200
   end
 
@@ -69,7 +73,8 @@ class Configuration
       :app_name, :server_ip, :server_port, :master_repository_uri,
       :user_name, :user_email, :sync_frequency, :app_dir, :conf_dir,
       :template_dir, :static_dir, :log_dir, :data_dir, :log_level,
-      :log_file_name, :auto_reload, :max_upload_filesize
+      :log_file_name, :auto_reload, :prettify_exceptions, 
+      :max_upload_filesize
     ].collect do |c|
       sprintf "%12-s => %s", c.to_s, send(c).to_s
     end.join("\n")
