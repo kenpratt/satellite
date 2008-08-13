@@ -6,34 +6,6 @@
 # use a custom ruby-git fork (not the vanilla gem)
 require File.join(File.expand_path(File.dirname(__FILE__)), '../vendor/ruby-git/lib/git.rb')
 
-# monkey-patch ruby/git bridge to allow listing of unmerged files
-Git::Lib.class_eval do
-  def ls_files(opts=nil)
-    hsh = {}
-    command_lines('ls-files', opts || ['--stage']).each do |line|
-      (info, file) = line.split("\t")
-      (mode, sha, stage) = info.split
-      hsh[file] = {:path => file, :mode_index => mode, :sha_index => sha, :stage => stage}
-    end
-    hsh
-  end
-end
-Git::Base.class_eval do
-  def ls_files(opts=nil)
-    self.lib.ls_files(opts)
-  end
-  def ls_unmerged_files
-    ls_files("--unmerged")
-  end
-end
-
-# monkey-patch ruby/git bridge to allow case-insensitive greps
-Git::Base.class_eval do
-  def grep(query, opts = {})
-    self.object('HEAD').grep(query, nil, opts)
-  end
-end
-
 def quote(s)
   "'#{s}'"
 end
@@ -75,7 +47,7 @@ module GitDb
 
     def search(str)
       out = {}
-      repo.grep(str, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
+      repo.grep(str, nil, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
       out
     end
 
