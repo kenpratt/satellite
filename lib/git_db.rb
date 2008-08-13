@@ -1,7 +1,10 @@
 # This is the "database", which entails a local git repository to store pages
 # in as well as a master repository to pull changes from and push changes to.
 
-%w{ configuration rubygems fileutils git }.each {|l| require l }
+%w{ configuration rubygems fileutils }.each {|l| require l }
+
+# use a custom ruby-git fork (not the vanilla gem)
+require File.join(File.expand_path(File.dirname(__FILE__)), '../vendor/ruby-git/lib/git.rb')
 
 # monkey-patch ruby/git bridge to allow listing of unmerged files
 Git::Lib.class_eval do
