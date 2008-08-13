@@ -7,6 +7,7 @@
 
 <div id="page-list">
   <h3>Pages</h3>
+  <ul>
   <% for page in @pages %>
     <li>
       <a href="<%= @uri.page(page.name) %>"><%= page.name %></a>
@@ -14,10 +15,12 @@
       <a class="delete" href="<%= @uri.delete(page) %>"><span>Delete</span></a>
     </li>
   <% end %>
+  </ul>
 </div>
 
 <div id="upload-list">
   <h3>Uploads</h3>
+  <ul>
   <% for upload in @uploads %>
     <li>
       <a href="<%= @uri.upload(upload.name) %>"><%= upload.name %></a>
@@ -25,8 +28,9 @@
       <a class="delete" href="<%= @uri.delete(upload) %>"><span>Delete</span></a>
     </li>
   <% end %>
+  </ul>
 
-  <p style="padding-top:1em">
+  <p>
     <a href="#" onclick="showFileUploadForm(); return false;">Upload a file</a>
   </p>
 
