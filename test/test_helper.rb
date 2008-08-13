@@ -1,39 +1,37 @@
-$:.unshift 'lib/', File.dirname(__FILE__) + '/../lib'
+# add library directories to load path
+LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), '../lib')
+$LOAD_PATH.unshift(LIBDIR)
+TEST_LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), 'lib')
+$LOAD_PATH.unshift(TEST_LIBDIR)
 
-require 'rubygems'
+%w{ configuration satellite rubygems test/spec helper_methods custom_shoulds }.each {|l| require l }
 
-try = proc do |library, version|
-  begin
-    dashed = library.gsub('/','-')
-    require library
-    gem dashed, version
-  rescue LoadError
-    puts "=> You need the #{library} gem to run these tests.",
-         "=> $ sudo gem install #{dashed}"
-    exit
-  end
-end
-
-try['test/spec', '>= 0.3']
 #try['mocha', '>= 0.4']
 
 begin require 'redgreen'; rescue LoadError; nil end
 
-require 'configuration'
-require 'satellite'
-
 CONF = Configuration.load(:test)
-
 BASE_URI = 'http://' + CONF.server_ip + (CONF.server_port != 80 ? ":#{CONF.server_port}" : '')
 
 def fixture(name)
   File.dirname(__FILE__) + "/fixtures/#{name}.html"
 end
 
-def request
-  @request = Rack::MockRequest.new(Satellite.server.application)
+# tear down any existing stuff and setup test environment
+def setup_repository
+  teardown_repository
+  
+  # create a master repo for testing
+  puts "setting up"
+  if !File.exists?(CONF.master_repository_uri)
+    create_script = File.join(CONF.app_dir, 'bin/create_master_repo')
+    `#{create_script} #{CONF.master_repository_uri}`
+  end
 end
 
-def follow(response)
-  @request.get(response.location)
+# tear down test environment
+def teardown_repository
+  puts "tearing down"
+  # `rm -rf #{CONF.master_repository_uri}`
+  # `rm -rf #{CONF.data_dir}`
 end

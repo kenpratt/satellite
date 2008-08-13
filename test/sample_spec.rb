@@ -1,48 +1,73 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'satellite'
 
-describe 'The homepage' do
-  setup do
-    @result = request.get('/page/Home')
+def setup_and_teardown
+  before(:all) { setup_repository }
+  after(:all) { teardown_repository }
+end
+
+describe 'A totally blank wiki' do
+  setup_and_teardown
+
+  it 'should redirect / to the homepage' do
+    get '/'
+    should.redirect_to('/page/Home')
   end
 
-  it 'should be there' do
-    @result.should.be.ok
-    @result.should.match '<h2>Home</h2>'
+  it 'should not have an existing homepage' do
+    get '/page/Home'
+    should.redirect_to('/page/Home/edit')
+
+    follow_redirect
+    should.be.ok
+    should.match "<h2>Editing Home</h2>"
+  end
+  
+  it 'should have an empty list page' do
+    get '/list'
+    should.be.ok
+    should.match '<h2>All pages and uploads</h2>'
+    @response.body.should.not.match /<li>/
   end
 end
 
+# TODO implement
+describe 'A wiki with just a homepage' do
+end
+
 describe 'A non-existent wiki page, when navigated to directly' do
+  setup_and_teardown
+    
   setup do
-    @result = request.get('/page/qwertyuiop12345678')
-    @final_result = follow @result
+    get '/page/qwertyuiop12345678'
   end
   
   it 'should redirect to an edit page' do
-    @result.should.redirect_to '/page/qwertyuiop12345678/edit'
-    @final_result.should.be.ok
-    @final_result.should.match '<h2>Editing qwertyuiop12345678</h2>'
+    should.redirect_to '/page/qwertyuiop12345678/edit'
+
+    follow_redirect
+    should.be.ok
+    should.match '<h2>Editing qwertyuiop12345678</h2>'
   end
   
+  # TODO implement
   it 'should have a sensible cancellation action' do
-    # TODO implement
   end
 end
 
 describe 'A non-existent wiki page, when navigated to by a link' do
+  setup_and_teardown
+
   setup do
     @referrer = "#{BASE_URI}/page/Home"
-    @result = request.get('/page/qwertyuiop12345678', :HTTP_REFERER => @referrer )
-    @final_result = follow @result
+    get '/page/qwertyuiop12345678', :HTTP_REFERER => @referrer
   end
   
-  it 'should redirect back to the referrer upon cancellation' do
-    @final_result.should.match '<input type="hidden" name="return_to" value="'+@referrer+'" />'
-  end
-end
-
-describe 'An existing wiki page, when navigated to directly' do
-  setup do
-    @res = request.get('/page/Home')
+  # TODO enable
+  xit 'should redirect back to the referrer upon cancellation' do
+    should.redirect_to '/page/qwertyuiop12345678/edit'
+    
+    follow_redirect
+    should.match '<input type="hidden" name="return_to" value="'+@referrer+'" />'
   end
 end
