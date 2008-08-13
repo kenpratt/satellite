@@ -239,7 +239,7 @@ module PicoFramework
     end
 
     def logger
-      @@logger
+      @@logger ||= nil
     end
   end
 end
@@ -258,9 +258,22 @@ def controller(*routes)
   c
 end
 
+# swallow all methods passed in
+class Zombie
+  def method_missing(name, *args, &block)
+    # do nothing
+  end
+end
+
 # shortcut to logger
 def log
-  PicoFramework.logger
+  if logger = PicoFramework.logger
+    logger
+  else
+    # if no logger is set up, use a zombie class instead
+    puts "No logger is set up -- logging to /dev/null"
+    Zombie.new
+  end
 end
 
 # save some input (string, tempfile, etc) to the filesystem

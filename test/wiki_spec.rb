@@ -1,11 +1,6 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'satellite'
 
-def setup_and_teardown
-  before(:all) { setup_repository }
-  after(:all) { teardown_repository }
-end
-
 describe 'A totally blank wiki' do
   setup_and_teardown
 

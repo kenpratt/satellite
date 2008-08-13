@@ -35,3 +35,8 @@ def teardown_repository
   # `rm -rf #{CONF.master_repository_uri}`
   # `rm -rf #{CONF.data_dir}`
 end
+
+def setup_and_teardown
+  before(:all) { setup_repository }
+  after(:all) { teardown_repository }
+end

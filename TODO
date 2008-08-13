@@ -13,7 +13,6 @@
 * (5) better installation instructions
 * (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
 * (2) set up deployment (rake/capistrano/vlad)
-* (1) polish up rspec testing framework
 * (1) satellite-wiki.com
 * (1) prettier 404 page (just render 404 error into template)
 * (1) extend URLMap to provide regex mapping? (and gid rid of the ugly uploads/ hack?)
