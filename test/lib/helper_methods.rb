@@ -19,6 +19,11 @@ module Satellite
       def follow_redirect
         @response = @request.get(@response.location)
       end
+      
+      # search parsed body using Hpricot
+      def search_body(expression)
+        @response.parsed_body.search(expression)
+      end
     end
   end
 end
