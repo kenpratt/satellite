@@ -22,7 +22,6 @@ def setup_repository
   teardown_repository
   
   # create a master repo for testing
-  puts "setting up"
   if !File.exists?(CONF.master_repository_uri)
     create_script = File.join(CONF.app_dir, 'bin/create_master_repo')
     `#{create_script} #{CONF.master_repository_uri}`
@@ -31,9 +30,9 @@ end
 
 # tear down test environment
 def teardown_repository
-  puts "tearing down"
-  # `rm -rf #{CONF.master_repository_uri}`
-  # `rm -rf #{CONF.data_dir}`
+  GitDb.obliterate!
+  FileUtils.cd(CONF.app_dir)
+  FileUtils.rm_rf(CONF.master_repository_uri)
 end
 
 def setup_and_teardown

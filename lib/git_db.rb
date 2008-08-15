@@ -19,8 +19,10 @@ module GitDb
   class MergeConflict < RuntimeError; end
   class ConnectionFailed < RuntimeError; end
 
-  class << self
+  # cache repository
+  @@repo = nil
 
+  class << self
     def sync
       repo.pull
       repo.push
@@ -51,8 +53,21 @@ module GitDb
       out
     end
 
-    def repack()
+    def repack
       repo.repack
+    end
+    
+    def obliterate!
+      if @@repo
+        repo.obliterate!
+        @@repo = nil
+      else
+        begin
+          Repo.open.obliterate!
+        rescue ArgumentError => e
+          # repo doesn't exist yet -- nothing to obliterate
+        end
+      end
     end
   end
 
@@ -213,6 +228,11 @@ module GitDb
           raise e
         end
       end
+    end
+    
+    def obliterate!
+      FileUtils.cd(CONF.app_dir)
+      FileUtils.rm_rf(CONF.data_dir)
     end
 
     def method_missing(name, *args)
