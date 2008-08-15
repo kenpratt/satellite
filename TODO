@@ -5,7 +5,6 @@
 === Bugs
 
 * list page: sort puts lowercase items at the end -- change to mixed case alphabetical
-* app won't start up while offline (due to the "feature" i added of waiting for sync before server starts)
 
 === Now (pre-1.0) (priority in brackets)
 

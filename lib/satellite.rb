@@ -620,9 +620,6 @@ module Satellite
       # kill the whole server if an unexpected exception is encounted in the sync
       Thread.abort_on_exception = true
 
-      # perform initial sync (not in thread, so that server waits to start up)
-      sync
-
       # spawn thread to sync with master repository
       Thread.new do
         while true
