@@ -18,13 +18,21 @@ def fixture(name)
 end
 
 # tear down any existing stuff and setup test environment
-def setup_repository
+def setup_repository(state=:blank)
   teardown_repository
   
   # create a master repo for testing
   if !File.exists?(CONF.master_repository_uri)
     create_script = File.join(CONF.app_dir, 'bin/create_master_repo')
     `#{create_script} #{CONF.master_repository_uri}`
+  end
+  
+  # preload repo?
+  if state == :populated
+    Satellite::Models::Page.new('Home', 'I am the Home page.').save
+    Satellite::Models::Page.new('Fizz', 'I am the Fizz page.').save
+    Satellite::Models::Page.new('Bozz', 'I am the Bozz page.').save
+    Satellite::Models::Page.new('bazz', 'I am the bazz page.').save
   end
 end
 
@@ -35,7 +43,8 @@ def teardown_repository
   FileUtils.rm_rf(CONF.master_repository_uri)
 end
 
-def setup_and_teardown
-  before(:all) { setup_repository }
+# install setup and teardown methods
+def setup_and_teardown(*args)
+  before(:all) { setup_repository(*args) }
   after(:all) { teardown_repository }
 end

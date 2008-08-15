@@ -18,6 +18,8 @@
 * (1) refactor config to be a member variable instead of a constant (like logger)
 * (1) speed up search by limiting to pages/ dir only?
 * (1) separate page sync and upload sync, since the latter is so much slower and less likely to cause merge issues?
+* (1) tests: use hpricot to do nice matching of response body
+* (1) tests: use fixtures for data loading?
 
 === Soon (maybe 1.0, maybe later)
 
