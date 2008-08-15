@@ -394,7 +394,7 @@ module Satellite
         yield upload if block_given?
 
         # respond with plain text (since it's a flash plugin)
-        respond "Thanks!"
+        respond_plaintext "Thanks!"
       end
 
       # uri mappings
