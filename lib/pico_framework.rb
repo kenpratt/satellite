@@ -158,13 +158,13 @@ module PicoFramework
 
         controller, args = @router.process(request.path_info)
 
-        log.debug "Referrer: #{request.referrer}"
+        log.debug "Referrer: #{request.env['HTTP_REFERER']}"
 
         # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have referrer and input as args?
 
         # inject referring page
-        controller.instance_variable_set("@referrer", request.referrer)
+        controller.instance_variable_set("@referrer", request.env['HTTP_REFERER'])
 
         # inject GET & POST params
         controller.instance_variable_set("@input", request.params)

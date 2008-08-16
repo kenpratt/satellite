@@ -10,13 +10,13 @@
 
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (3) profiling/performance testing (particularly, would caching the Git obj speed up "DB" calls?)
+* (4) wiki syntax for easy image inlineing
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) satellite-wiki.com
 * (1) prettier 404 page (just render 404 error into template)
 * (1) extend URLMap to provide regex mapping? (and gid rid of the ugly uploads/ hack?)
 * (1) refactor config to be a member variable instead of a constant (like logger)
-* (1) speed up search by limiting to pages/ dir only?
+* (1) speed up search by limiting to pages/ dir only? (profile first)
 * (1) separate page sync and upload sync, since the latter is so much slower and less likely to cause merge issues?
 * (1) tests: use fixtures for data loading?
 
@@ -38,3 +38,4 @@
 * tagging
 * del.icio.us integration
 * show sync progress?
+* more profiling

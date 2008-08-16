@@ -381,6 +381,18 @@ module Satellite
         end
       end
       
+      # process the return_to uri
+      def return_to(bad_uri=nil)
+        return_to = @input['return_to']
+        if return_to
+          return_to.strip!
+          if return_to.any? && return_to != bad_uri
+            return return_to
+          end
+        end
+        nil
+      end
+      
       # process a file upload
       def process_upload
         log.debug "Uploaded: #{@input}"
@@ -473,10 +485,10 @@ module Satellite
           end
         when 'edit'
           page ||= Models::Page.new(name)
-          render 'edit_page', "Editing #{page.name}", :page => page
+          render 'edit_page', "Editing #{page.name}", :page => page, :cancel_uri => (@referrer || Uri.page(name))
         when 'resolve'
           if page
-            render 'resolve_conflict_page', "Resolving #{page.name}", :page => page
+            render 'resolve_conflict_page', "Resolving #{page.name}", :page => page, :cancel_uri => (@referrer || Uri.page(name))
           else
             redirect Uri.edit_page(name)
           end
@@ -488,20 +500,20 @@ module Satellite
       def post(name, action=nil)
         page = Models::Page.new(name, @input['content'])
         page.save
-        redirect Uri.page(page.name)
+        redirect return_to || Uri.page(page.name)
       end
     end
 
     class NewPageController < controller '/new'
       def get
-        render 'new_page', 'Add page', :page => Models::Page.new
+        render 'new_page', 'Add page', :page => Models::Page.new, :cancel_uri => (@referrer || Uri.list)
       end
 
       def post
         page = Models::Page.new(@input['name'].strip, @input['content'])
         unless Models::Page.exists?(page.name)
           page.save
-          redirect Uri.page(page.name)
+          redirect return_to || Uri.page(page.name)
         else
           render 'new_page', 'Add page', :page => page, :error => "A page named #{page.name} already exists"
         end
@@ -520,9 +532,9 @@ module Satellite
         hunk = @klass.rename(name, @input['new_name'].strip)
 
         # figure out where to redirect to
-        return_to = @input['return_to'].strip
-        if return_to.any? && return_to != Uri.send(type, name)
-          redirect return_to
+        uri = return_to(Uri.send(type, name))
+        if uri
+          redirect uri
         elsif @klass == Models::Page
           redirect Uri.page(hunk.name)
         elsif @klass == Models::Upload
@@ -542,7 +554,7 @@ module Satellite
         page_or_upload(type, name)
         hunk = @klass.load(name)
         hunk.delete!
-        redirect Uri.list
+        redirect return_to(Uri.send(type, name)) || Uri.list
       end
     end
 

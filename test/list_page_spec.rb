@@ -54,8 +54,9 @@ describe 'A list page for a populated wiki' do
 
   it 'should list uploads in (case-insensitive) alphabetical order' do
     get '/list'
-    uploads[0].to_s.should.match 'blam.txt'
-    uploads[1].to_s.should.match 'Hello World.txt'
+    uploads[0].to_s.should.match 'Baaa.txt'
+    uploads[1].to_s.should.match 'blam.txt'
+    uploads[2].to_s.should.match 'Hello World.txt'
   end
   
 end

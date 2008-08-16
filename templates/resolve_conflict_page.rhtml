@@ -1,7 +1,8 @@
-<%= @partial.call :cancel_hotkeys, { :redirect_uri => @uri.page(@page.name) } %>
+<%= @partial.call :cancel_hotkeys, { :redirect_uri => @cancel_uri } %>
 
 <form action="<%= @uri.page(@page.name) %>" method="post">
+  <input type="hidden" name="return_to" value="<%= @referrer %>" />
   <textarea id="content" name="content" rows="30" cols="40"><%= @page.body %></textarea><br />
   <button type="submit">Save</button>
-  or <a href="<%= @uri.page(@page.name) %>">Cancel</a>
+  or <a href="<%= @cancel_uri %>">Cancel</a>
 </form>
