@@ -2,8 +2,8 @@ require File.dirname(__FILE__) + '/test_helper'
 require 'satellite'
 
 # Hpricot search paths
-def pages; @response.parsed_body.search("//div[@id='page-list']/ul/li"); end
-def uploads; @response.parsed_body.search("//div[@id='upload-list']/ul/li"); end
+def pages; search_body "//div[@id='page-list']/ul/li"; end
+def uploads; search_body "//div[@id='upload-list']/ul/li"; end
 
 describe 'A list page for a blank wiki' do
   setup_and_teardown

@@ -6,14 +6,20 @@ module Satellite
         Rack::MockRequest.new(Satellite.create_server.application)
       end
   
-      def get(*args)
+      def get(uri, opts={})
         @request = new_request
-        @response = @request.get(*args)
+        @response = @request.get(uri, opts)
       end
   
-      def post(*args)
+      def post(uri, opts={})
         @request = new_request
-        @response = @request.post(*args)
+        
+        # stringify input
+        if opts[:input]
+          opts[:input] = opts[:input].to_a.collect {|k,v| "#{k}=#{Rack::Utils.escape(v)}" }.join('&')
+        end
+        
+        @response = @request.post(uri, opts)
       end
 
       def follow_redirect
