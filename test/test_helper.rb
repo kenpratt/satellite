@@ -33,6 +33,8 @@ def setup_repository(state=:blank)
     Satellite::Models::Page.new('Fizz', 'I am the Fizz page.').save
     Satellite::Models::Page.new('Bozz', 'I am the Bozz page.').save
     Satellite::Models::Page.new('bazz', 'I am the bazz page.').save
+    Satellite::Models::Upload.new('Hello World.txt').save('Hello World!')
+    Satellite::Models::Upload.new('blam.txt').save('Boom, headshot!')
   end
 end
 

@@ -110,9 +110,9 @@ module Satellite
       def local_filepath; klass.local_filepath(name); end
       def filepath; klass.filepath(name); end
 
-      # sort home above other pages, otherwise alphabetical order
+      # case-insensitive alphabetical order
       def <=>(other)
-        name <=> other.name
+        name.downcase <=> other.name.downcase
       end
 
     private
@@ -207,14 +207,14 @@ module Satellite
         original_save(@body)
       end
 
-      # sort home above other pages, otherwise alphabetical order
+      # sort home above other pages, otherwise (case-insensitive) alphabetical order
       def <=>(other)
         if name == 'Home'
           -1
         elsif other.name == 'Home'
           1
         else
-          name <=> other.name
+          name.downcase <=> other.name.downcase
         end
       end
 

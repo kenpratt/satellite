@@ -39,7 +39,7 @@ describe 'A list page for a populated wiki' do
     pages.size.should.be > 0
   end
   
-  it 'should list pages in alphabetical order, with Home first' do
+  it 'should list pages in (case-insensitive) alphabetical order, with Home first' do
     get '/list'
     pages[0].to_s.should.match 'Home'
     pages[1].to_s.should.match 'bazz'
@@ -50,6 +50,12 @@ describe 'A list page for a populated wiki' do
   it 'should have some uploads listed' do
     get '/list'
     uploads.size.should.be > 0
+  end
+
+  it 'should list uploads in (case-insensitive) alphabetical order' do
+    get '/list'
+    uploads[0].to_s.should.match 'blam.txt'
+    uploads[1].to_s.should.match 'Hello World.txt'
   end
   
 end
