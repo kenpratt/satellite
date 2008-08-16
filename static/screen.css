@@ -188,11 +188,24 @@ table.markup-reference td.markup {
   padding: 0;
   text-align: center;
 }
-.image-box span.caption {
+.image-box span.inner {
   display: block;
   margin: 0 auto;
   padding: 4px 0 0 0;
   font-size: 85%;
   line-height: 1.0;
   text-align: center;
+}
+
+.upload-box {
+  float: left;
+  margin: 0.25em;
+  padding: 1px 5px;
+  border: 1px solid silver;
+  text-align: center;
+}
+.upload-box .upload {
+  padding: 1px 18px 1px 0;
+  background: transparent url('/static/bullet_disk.png') no-repeat right 0;
+  line-height: 16px;
 }

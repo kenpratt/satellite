@@ -303,12 +303,16 @@ module Satellite
         # uploads are like: {{upload:foo.ext}}
         def process_wiki_links(str)
           str.gsub(UPLOAD_LINK_FMT) do |s|
-            name, uri = $1, PicoFramework::Controller::Uri.upload($1)
+            begin
+              upload = Upload.load($1)
+            rescue GitDb::FileNotFound
+              upload = nil
+            end
             notextile do
-              if Upload.exists?(name)
-                "<a href=\"#{uri}\">#{name}</a>"
+              if upload
+                box(:upload, upload)
               else
-                "<span class=\"nonexistent\">#{name}</span>"
+                "<span class=\"nonexistent\">#{$1}</span>"
               end
             end
           end.gsub(IMAGE_LINK_FMT) do |s|
@@ -319,17 +323,7 @@ module Satellite
             end
             notextile do
               if upload
-                uri_upload = PicoFramework::Controller::Uri.upload(upload.name)
-                uri_rename = PicoFramework::Controller::Uri.rename(upload)
-                uri_delete = PicoFramework::Controller::Uri.delete(upload)
-                "<div class=\"image-box\">" + 
-                "<a href=\"#{uri_upload}\"><img src=\"#{uri_upload}\" /></a>" + 
-                "<span class=\"caption\">" +
-                "<a href=\"#{uri_upload}\">#{upload.name}</a> " +
-                "<a class=\"rename\" href=\"#{uri_rename}\"><span>Rename</span></a>" +
-                "<a class=\"delete\" href=\"#{uri_delete}\"><span>Delete</span></a>" +
-                "</span>" +
-                "</div>"
+                box(:image, upload)
               else
                 "<span class=\"nonexistent\">#{$1}</span>"
               end
@@ -344,6 +338,22 @@ module Satellite
               end
             end
           end
+        end
+        
+        def box(type, upload)
+          uri_upload = PicoFramework::Controller::Uri.upload(upload.name)
+          uri_rename = PicoFramework::Controller::Uri.rename(upload)
+          uri_delete = PicoFramework::Controller::Uri.delete(upload)
+          out = ""
+          out << "<div class=\"#{type}-box\">"
+          out << "<a href=\"#{uri_upload}\"><img src=\"#{uri_upload}\" /></a>" if type == :image
+          out << "<span class=\"inner\">"
+          out << "<a class=\"upload\" href=\"#{uri_upload}\">#{upload.name}</a> "
+          out << "<a class=\"rename\" href=\"#{uri_rename}\"><span>Rename</span></a>"
+          out << "<a class=\"delete\" href=\"#{uri_delete}\"><span>Delete</span></a>"
+          out << "</span>"
+          out << "</div>"
+          out
         end
 
         # helper to wrap wrap block in notextile tags (block should return html string)

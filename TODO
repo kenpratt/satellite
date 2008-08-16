@@ -4,13 +4,12 @@
 
 === Bugs
 
-* none? (ha!)
+* page flow is weird when deleting a page
 
 === Now (pre-1.0) (priority in brackets)
 
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (3) make upload boxes with rename/delete icons like image boxes
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) satellite-wiki.com
 * (1) prettier 404 page (just render 404 error into template)
@@ -23,6 +22,7 @@
 === Soon (maybe 1.0, maybe later)
 
 * fix incoming links during page rename operations
+* remove upload/image box from current page when you delete it
 * page history view
 * revert page to some previous version
 * extend search to search upload names (and upload content?)
