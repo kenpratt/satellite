@@ -10,7 +10,7 @@
 
 * (5) make a logo! (and favicon to match)
 * (5) better installation instructions
-* (4) wiki syntax for easy image inlineing
+* (3) make upload boxes with rename/delete icons like image boxes
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) satellite-wiki.com
 * (1) prettier 404 page (just render 404 error into template)

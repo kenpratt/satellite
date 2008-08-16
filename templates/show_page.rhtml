@@ -15,7 +15,7 @@
 </script>
 
 <%= @page.body(:html) %>
-<p>
+<p id="page-menu">
   <a href="<%= @uri.edit_page(@page.name) %>">Edit</a> |
   <a href="<%= @uri.rename(@page) %>">Rename</a> |
   <a href="<%= @uri.delete(@page) %>">Delete</a> |

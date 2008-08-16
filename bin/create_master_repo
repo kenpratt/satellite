@@ -29,7 +29,7 @@ dest="$@"
 
 # ensure arguments are valid
 [ "$dest" ] || die "Missing path to create the repository at"
-[ -e "$dest" ] && die "'$dest' already exists -- needs to be a nonexistant path"
+[ -e "$dest" ] && die "'$dest' already exists -- needs to be a nonexistent path"
 
 # so we don't need to cd into dest dir
 export GIT_DIR="$dest"

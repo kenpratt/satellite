@@ -37,6 +37,9 @@ h1, h2, h3, h4, h5 {
 #menu-search, #menu-search div {
   display: inline;
 }
+#page-menu {
+  clear: both;
+}
 
 #content-box {
   padding: 1em;
@@ -61,7 +64,7 @@ li {
   margin-left: 1.5em;
 }
 
-.nonexistant a {
+.nonexistent a {
   color: #d30;
 }
 
@@ -156,17 +159,40 @@ table.markup-reference td.markup {
   float: left;
   width: 38em;
 }
-#page-list .rename, #upload-list .rename {
+
+.rename {
   padding: 1px 20px 1px 0;
   background: transparent url('/static/textfield_rename.png') no-repeat right 0;
 }
-#page-list .rename span, #upload-list .rename span {
+.rename span {
   display: none;
 }
-#page-list .delete, #upload-list .delete {
+.delete {
   padding: 1px 20px 1px 0;
   background: transparent url('/static/bullet_delete.png') no-repeat right 0;
 }
-#page-list .delete span, #upload-list .delete span {
+.delete span {
   display: none;
+}
+
+.image-box {
+  float: left;
+  margin: 0 0 1em 0;
+  padding: 5px;
+  border: 1px solid silver;
+  text-align: center;
+}
+.image-box img {
+  display: block;
+  margin: 0 auto;
+  padding: 0;
+  text-align: center;
+}
+.image-box span.caption {
+  display: block;
+  margin: 0 auto;
+  padding: 4px 0 0 0;
+  font-size: 85%;
+  line-height: 1.0;
+  text-align: center;
 }

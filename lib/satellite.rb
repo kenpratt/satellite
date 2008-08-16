@@ -247,6 +247,7 @@ module Satellite
     class WikiMarkup
       WIKI_LINK_FMT = /\{\{([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
       UPLOAD_LINK_FMT = /\{\{upload:([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
+      IMAGE_LINK_FMT = /\{\{image:([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
 
       AUTO_LINK_RE = %r{
                       (                          # leading text
@@ -307,7 +308,30 @@ module Satellite
               if Upload.exists?(name)
                 "<a href=\"#{uri}\">#{name}</a>"
               else
-                "<span class=\"nonexistant\">#{name}</span>"
+                "<span class=\"nonexistent\">#{name}</span>"
+              end
+            end
+          end.gsub(IMAGE_LINK_FMT) do |s|
+            begin
+              upload = Upload.load($1)
+            rescue GitDb::FileNotFound
+              upload = nil
+            end
+            notextile do
+              if upload
+                uri_upload = PicoFramework::Controller::Uri.upload(upload.name)
+                uri_rename = PicoFramework::Controller::Uri.rename(upload)
+                uri_delete = PicoFramework::Controller::Uri.delete(upload)
+                "<div class=\"image-box\">" + 
+                "<a href=\"#{uri_upload}\"><img src=\"#{uri_upload}\" /></a>" + 
+                "<span class=\"caption\">" +
+                "<a href=\"#{uri_upload}\">#{upload.name}</a> " +
+                "<a class=\"rename\" href=\"#{uri_rename}\"><span>Rename</span></a>" +
+                "<a class=\"delete\" href=\"#{uri_delete}\"><span>Delete</span></a>" +
+                "</span>" +
+                "</div>"
+              else
+                "<span class=\"nonexistent\">#{$1}</span>"
               end
             end
           end.gsub(WIKI_LINK_FMT) do |s|
@@ -316,7 +340,7 @@ module Satellite
               if Page.exists?(name)
                 "<a href=\"#{uri}\">#{name}</a>"
               else
-                "<span class=\"nonexistant\">#{name}<a href=\"#{uri}\">?</a></span>"
+                "<span class=\"nonexistent\">#{name}<a href=\"#{uri}\">?</a></span>"
               end
             end
           end
