@@ -391,14 +391,33 @@ module Satellite
     SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
 
     # reopen framework controller class to provide some app-specific logic
-    class PicoFramework::Controller
+    class PicoFramework::Controller      
+      class << self
+        # pass title and uri mappings into templates too
+        alias :original_render :render
+        def render(template, title, params={})
+          common_params = { :title => title, :uri => Uri, :conf => CONF,
+            :pages => Models::Page.list, :conflicts => Models::Page.conflicts }
+          original_render(template, params.merge!(common_params))
+        end
+        
+        # need to override 404 method to use new render method
+        def return_404(request_uri)
+          log.warn "No route found for '#{request_uri}', returning 404."
+          respond(404) do |out|
+            out.write render('404', '404, Baby', :request_uri => request_uri)
+          end
+        end
+      end
+      
       # pass title and uri mappings into templates too
       alias :original_render :render
-      def render(template, title, params={})
-        common_params = { :title => title, :uri => Uri, :conf => CONF,
-          :pages => Models::Page.list, :conflicts => Models::Page.conflicts,
-          :referrer => @referrer }
-        original_render(template, params.merge!(common_params))
+      def render(template, title, context={})
+        log.debug "Rendering #{template}"
+        self.class.respond(200) do |out|
+          context[:referrer] = @referrer
+          out.write self.class.render(template, title, context)
+        end
       end
 
       # for controllers that can share some page/upload logic

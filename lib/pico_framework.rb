@@ -17,10 +17,45 @@ module PicoFramework
   #   controller(*routes) method
   class Controller
     class << self
+      # render a template to a string
+      def render(template, context)
+        inner = process_template(template, context)
+        context.store(:inner, inner)
+        process_template('structure', context)
+      end
+      
       # construct a Rack::Response object
       # block should take output as arg and call output.write
       def respond(status, header={}, &block)
         Rack::Response.new([], status, header).finish(&block)
+      end
+
+      # return the 404 page
+      def return_404(request_uri)
+        log.warn "No route found for '#{request_uri}', returning 404."
+        respond(404) do |out|
+          if File.exists? template_path('404')
+            out.write render('404', :request_uri => request_uri)
+          else
+            out.write "<pre>404, baby. There ain't nothin' at #{request_uri}.</pre>"
+          end
+        end
+      end
+
+    private
+      
+      # process an erubis template with the provided context
+      def process_template(template, context={})
+        markup = open(template_path(template)).read
+        partial_function = lambda {|*a| t, h = *a; process_template("_#{t}", h || {}) }
+        context = context.merge({ :partial => partial_function })
+        context[:error] ||= nil
+        Erubis::Eruby.new(markup).evaluate(context)
+      end
+
+      # template path is configurable
+      def template_path(template)
+        File.join(CONF.template_dir, "#{template}.rhtml")
       end
     end
 
@@ -28,9 +63,7 @@ module PicoFramework
     def render(template, context={})
       log.debug "Rendering #{template}"
       self.class.respond(200) do |out|
-        inner = process_template(template, context)
-        context.store(:inner, inner)
-        out.write process_template('structure', context)
+        out.write self.class.render(template, context)
       end
     end
 
@@ -47,21 +80,7 @@ module PicoFramework
         out.write str
       end
     end
-
-    # process an erubis template with the provided context
-    def process_template(template, context={})
-      markup = open(template_path(template)).read
-      partial_function = lambda {|*a| t, h = *a; process_template("_#{t}", h || {}) }
-      context = context.merge({ :partial => partial_function })
-      context[:error] ||= nil
-      Erubis::Eruby.new(markup).evaluate(context)
-    end
-
-    # template path is configurable
-    def template_path(template)
-      File.join(CONF.template_dir, "#{template}.rhtml")
-    end
-
+    
     def to_s
       self.class.to_s
     end
@@ -177,10 +196,7 @@ module PicoFramework
           raise ArgumentError.new("Only GET and POST are supported, not #{request.request_method}")
         end
       rescue Router::NoPathFound
-        log.warn "No route found for '#{request.path_info}', returning 404."
-        Controller.respond(404) do |out|
-          out.write("<pre>404, baby. There ain't nothin' at #{request.path_info}.</pre>")
-        end
+        Controller.return_404(request.path_info)
       end
     end
   end

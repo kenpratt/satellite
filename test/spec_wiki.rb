@@ -47,6 +47,12 @@ describe 'A wiki, in general,' do
     get '/page/Lolcopter'
     should.redirect_to('/page/Lolcopter/edit')
   end
+  
+  it 'should have a pretty 404 page' do
+    get '/four-oh-four'
+    @response.status.should.be.equal 404
+    should.match '<h2>404, Baby</h2>'
+  end
 end
 
 describe 'A totally blank wiki' do
