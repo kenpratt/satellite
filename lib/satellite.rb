@@ -551,7 +551,7 @@ module Satellite
         page = Models::Page.new(@input['name'].strip, @input['content'])
         unless Models::Page.exists?(page.name)
           page.save
-          redirect return_to || Uri.page(page.name)
+          redirect Uri.page(page.name) # don't worry about return_to
         else
           render 'new_page', 'Add page', :page => page, :error => "A page named #{page.name} already exists"
         end

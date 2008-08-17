@@ -10,21 +10,18 @@ describe 'The add page' do
   it 'should not encode the referrer when navigated to directly' do
     get '/new'
     should.be.ok
-    return_to.should.equal ''
     cancel_to.should.equal '/list'
   end
 
   it 'should encode the referrer in a form parameter when navigated to by a link' do
     get '/new', "HTTP_REFERER" => "#{BASE_URI}/page/Home"
     should.be.ok
-    return_to.should.equal "#{BASE_URI}/page/Home"
     cancel_to.should.equal "#{BASE_URI}/page/Home"
   end
 
   it 'should encode referrers from different domains too' do
     get '/new', "HTTP_REFERER" => 'http://google.ca/search?foo'
     should.be.ok
-    return_to.should.equal 'http://google.ca/search?foo'
     cancel_to.should.equal 'http://google.ca/search?foo'
   end
 
@@ -33,9 +30,9 @@ describe 'The add page' do
     should.redirect_to '/page/Frob'
   end
 
-  it 'should redirect to return_to if return_to is supplied' do
-    post '/new', :input => { :name => 'Frib', :content => '...', :return_to => 'http://google.ca/' }
-    should.redirect_to 'http://google.ca/'
+  it 'should redirect to the show page when saved and ignore return_to' do
+    post '/new', :input => { :name => 'frimm', :content => '...', :return_to => "#{BASE_URI}/list" }
+    should.redirect_to '/page/frimm'
   end
 end
 
