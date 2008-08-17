@@ -420,8 +420,12 @@ module Satellite
         return_to = @input['return_to']
         if return_to
           return_to.strip!
-          if return_to.any? && return_to != bad_uri
-            return return_to
+          if return_to.any?
+            if bad_uri
+              return return_to unless return_to.match(/#{bad_uri}$/)
+            else
+              return return_to
+            end
           end
         end
         nil

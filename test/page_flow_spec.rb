@@ -106,7 +106,12 @@ describe 'The rename page' do
   it 'should redirect to return_to if return_to is supplied' do
     post '/page/Bozz/rename', :input => { :new_name => 'Bozzz', :return_to => 'http://google.ca/' }
     should.redirect_to 'http://google.ca/'
-  end    
+  end
+
+  it 'should return to the new show page if return_to is the old show page' do
+    post '/page/bazz/rename', :input => { :new_name => 'bazzz', :return_to => "#{BASE_URI}/page/bazz" }
+    should.redirect_to '/page/bazzz'
+  end
 end
 
 describe 'The delete page' do
@@ -142,6 +147,11 @@ describe 'The delete page' do
     post '/page/Bozz/delete', :input => { :return_to => 'http://google.ca/' }
     should.redirect_to 'http://google.ca/'
   end    
+
+  it 'should return to the list page if return_to is the show page for the deleted page' do
+    post '/page/bazz/delete', :input => { :return_to => "#{BASE_URI}/page/bazz" }
+    should.redirect_to '/list'
+  end
 end
 
 describe 'The resolve conflict page' do
@@ -246,5 +256,5 @@ describe 'The delete upload page' do
   it 'should redirect to return_to if return_to is supplied' do
     post '/upload/Baaa.txt/delete', :input => { :return_to => 'http://google.ca/' }
     should.redirect_to 'http://google.ca/'
-  end    
+  end
 end
