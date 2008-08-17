@@ -76,7 +76,7 @@ class Configuration
       :log_file_name, :auto_reload, :prettify_exceptions, 
       :max_upload_filesize
     ].collect do |c|
-      sprintf "%12-s => %s", c.to_s, send(c).to_s
+      sprintf "%-12s => %s", c.to_s, send(c).to_s
     end.join("\n")
   end
 
