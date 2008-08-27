@@ -5,93 +5,208 @@
 
 %w{ configuration pico_framework git_db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
 
+VALID_FILENAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
+
+require 'wiki_markup'
+
+# reopen pico controller class to provide some app-specific logic
+module Pico
+  class Controller
+    inject :conf
+    inject :urimap
+
+    # more context for the render methods
+    def app_context(title)
+      { 
+        :title     => title,
+        :uri       => urimap,
+        :conf      => conf,
+        :pages     => Satellite::Models::Pages.new.list,
+        :conflicts => Satellite::Models::Pages.new.conflicts,
+        :referrer  => @referrer
+      }
+    end
+
+    # redefine render method to take in more paramaters
+    alias :original_render :render
+    def render(template, title, context={})
+      context.merge!(app_context(title))
+      original_render(template, context)
+    end
+
+    # redefine 404 rendering too
+    class NotFound
+      def content
+        begin
+          context = Controller.new.app_context('404, Baby').merge({:request_uri => @request_uri})
+          Renderer.new('404', context).render_html
+        rescue Renderer::NoTemplateFound
+          "<pre>404, baby. There ain't nothin' at #{@request_uri}.</pre>"
+        end
+      end
+    end
+
+    # for controllers that can share some page/upload logic
+    # in general, pages should redirect back to the page itself,
+    # and uploads should redirect back to the list page
+    def page_or_upload(type, name)
+      case type
+      when 'page'
+        @klass = Satellite::Models::Page
+        @cancel_uri = @referrer || urimap.page(name)
+      when 'upload'
+        @klass = Satellite::Models::Upload
+        @cancel_uri = @referrer || urimap.list
+      end
+    end
+
+    # process the return_to uri
+    def return_to(bad_uri=nil)
+      return_to = @input['return_to']
+      if return_to
+        return_to.strip!
+        if return_to.any?
+          if bad_uri
+            return return_to unless return_to.match(/#{bad_uri}$/)
+          else
+            return return_to
+          end
+        end
+      end
+      nil
+    end
+
+    # process a file upload
+    def process_upload
+      logger.debug "Uploaded: #{@input}"
+      filename = @input['Filedata'][:filename].strip
+
+      # save upload
+      upload = Satellite::Models::Upload.new(filename)
+      upload.save(@input['Filedata'][:tempfile])
+
+      # allow extra post-save logic
+      yield upload if block_given?
+
+      # respond with plain text (since it's a flash plugin)
+      Success.new('Thanks!', 'Content-Type' => 'text/plain').response
+    end
+  end
+end
+
 module Satellite
-  # model definitions go here
+  # "Hunk" is a model representing a file stored in the backend.
+  # Hunks are saved locally in the filesystem, changes are committed to a
+  # local Git repository which is mirrored to a master repository.
+  # "Pages" and "Uploads" are types of Hunks.
+  #
+  # "Page" is a Hunk representing a wiki page.
+  # "Upload" is a Hunk representing an uploaded file.
+  #
+  # Methods that operate on a specific page/upload are in Hunk/Page/Upload.
+  # Methods that operate on more than one page/upload are in Hunks/Pages/Uploads.
   module Models
     PAGE_DIR = 'pages'
     UPLOAD_DIR = 'uploads'
 
-    # "Hunk" is a model representing a file stored in the backend.
-    # Hunks are saved locally in the filesystem, changes are committed to a
-    # local Git repository which is mirrored to a master repository.
-    # "Pages" and "Uploads" are types of Hunks.
-    class Hunk
-      VALID_FILENAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
+    class Model
+      inject :conf
+      inject :logger
+      inject :db
+      inject :wikimarkup
+    end
 
-      include Comparable
-
-      # -----------------------------------------------------------------------
-      # class methods
-      # -----------------------------------------------------------------------
-
-      class << self
-
-        def valid_name?(name)
-          name =~ /^[#{VALID_FILENAME_CHARS}]*$/
-        end
-
-        def exists?(name)
-          File.exists?(filepath(name))
-        end
-
-        def list
-          Dir[filepath('*')].collect {|s| self.new(parse_name(s)) }.sort
-        end
-
-        def load(name)
-          if exists?(name)
-            self.new(name)
-          else
-            raise GitDb::FileNotFound.new("#{self} #{name} does not exist")
-          end
-        end
-
-        def rename(old_name, new_name)
-          hunk = load(old_name)
-          hunk.rename(new_name) if hunk && new_name != old_name
-          hunk
-        end
-
-        # "foo.ext" (just the name by default)
-        def filename(name); name; end
-
-        # "pages/foo.ext"
-        def local_filepath(name); File.join(content_dir, filename(name)); end
-
-        # "path/to/pages/foo.ext"
-        def filepath(name); File.join(CONF.data_dir, content_dir, filename(name)); end
-
-        # try to extract the page name from the path
-        def parse_name(path)
-          if path =~ /^(.*\/)?([#{Hunk::VALID_FILENAME_CHARS}]+)$/
-            $2
-          else
-            path
-          end
-        end
+    class Hunks < Model
+      def initialize(item_class, content_dir)
+        @item_class, @content_dir = item_class, content_dir
       end
 
-      # -----------------------------------------------------------------------
-      # instance methods
-      # -----------------------------------------------------------------------
+      def list
+        Dir[File.join(path, '*')].collect {|s| @item_class.new(parse_name(s)) }.sort
+      end
 
-      def klass
-        self.class
+      # "path/to/hunks/"
+      def path; File.join(conf.data_dir, @content_dir); end
+
+      # try to extract the page name from the path
+      def parse_name(path)
+        if path =~ /^(.*\/)?([#{VALID_FILENAME_CHARS}]+)$/
+          $2
+        else
+          path
+        end
+      end
+    end
+
+    class Pages < Hunks
+      def initialize
+        super(Page, PAGE_DIR)
+      end
+
+      def search(query)
+        out = {}
+        db.search(query).each do |file,matches|
+          page = Page.new(parse_name(file))
+          out[page] = matches.collect do |line,text|
+            text = wikimarkup.process(text)
+            text.gsub!(/<\/?[^>]*>/, '')
+            [line, text]
+          end
+        end
+        out
+      end
+
+      def conflicts
+        db.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
+      end
+
+      # chop off the .textile
+      alias :original_parse_name :parse_name
+      def parse_name(path)
+        original_parse_name(path).sub(/\.textile$/, '')
+      end
+    end
+
+    class Uploads < Hunks
+      def initialize
+        super(Upload, UPLOAD_DIR)
+      end
+    end
+
+    class Hunk < Model
+      include Comparable
+
+      def initialize(content_dir, name)
+        @content_dir = content_dir
+        self.name = name
       end
 
       def name
         @name
       end
 
-      # name= method is private (see below)
+      def exists?
+        File.exists?(filepath)
+      end
+
+      def self.load(name)
+        hunk = self.new(name)
+        hunk.load
+        hunk
+      end
+
+      def load
+        raise GitDb::FileNotFound.new("#{@item_class} #{name} does not exist") unless exists?
+        self
+      end
 
       def save(input)
         begin
           raise ArgumentError.new("Saved name can't be blank") unless name.any?
           save_file(input, filepath)
-          GitDb.save(local_filepath, "Satellite: saving #{name}")
+          db.save(local_filepath, "Satellite: saving #{name}")
         rescue GitDb::ContentNotModified
-          log.debug "Hunk.save(): #{name} wasn't modified since last save"
+          logger.debug "Hunk.save(): #{name} wasn't modified since last save"
         end
       end
 
@@ -99,16 +214,22 @@ module Satellite
         old_name = name
         self.name = new_name
         raise ArgumentError.new("New name can't be blank") unless name.any?
-        GitDb.mv(klass.local_filepath(old_name), local_filepath, "Satellite: renaming #{old_name} to #{name}")
+        local_filepath_old = self.class.new(old_name).local_filepath
+        db.mv(local_filepath_old, local_filepath, "Satellite: renaming #{old_name} to #{name}")
       end
 
       def delete!
-        GitDb.rm(local_filepath, "Satellite: deleting #{name}")
+        db.rm(local_filepath, "Satellite: deleting #{name}")
       end
 
-      def filename; klass.filename(name); end
-      def local_filepath; klass.local_filepath(name); end
-      def filepath; klass.filepath(name); end
+      # "foo.ext" (just the name by default)
+      def filename; name; end
+
+      # "pages/foo.ext"
+      def local_filepath; File.join(@content_dir, filename); end
+
+      # "path/to/pages/foo.ext"
+      def filepath; File.join(conf.data_dir, @content_dir, filename); end
 
       # case-insensitive alphabetical order
       def <=>(other)
@@ -117,69 +238,21 @@ module Satellite
 
     private
 
+      def valid_name?(name)
+        name =~ /^[#{VALID_FILENAME_CHARS}]*$/
+      end
+
       def name=(name)
         name.strip!
-        raise ArgumentError.new("Name is invalid: #{name}") unless klass.valid_name?(name)
+        raise ArgumentError.new("Name is invalid: #{name}") unless valid_name?(name)
         @name = name
       end
-
     end
 
-    # "Page" is a Hunk representing a wiki page
     class Page < Hunk
-
-      # -----------------------------------------------------------------------
-      # class methods
-      # -----------------------------------------------------------------------
-
-      class << self
-        def content_dir; PAGE_DIR; end
-
-        def search(query)
-          out = {}
-          GitDb.search(query).each do |file,matches|
-            page = Page.new(parse_name(file))
-            out[page] = matches.collect do |line,text|
-              text = WikiMarkup.process(text)
-              text.gsub!(/<\/?[^>]*>/, '')
-              [line, text]
-            end
-          end
-          out
-        end
-
-        def conflicts
-          GitDb.conflicts.collect {|c| Page.new(parse_name(c)) }.sort
-        end
-
-        def load(name)
-          if exists?(name)
-            Page.new(name, open(filepath(name)).read)
-          else
-            raise GitDb::FileNotFound.new("Page #{name} does not exist")
-          end
-        end
-
-        # "foo.textile"
-        def filename(name); "#{name}.textile"; end
-
-        # try to extract the page name from the path
-        def parse_name(path)
-          if path =~ /^(.*\/)?([#{Hunk::VALID_FILENAME_CHARS}]+)\.textile$/
-            $2
-          else
-            path
-          end
-        end
-      end
-
-      # -----------------------------------------------------------------------
-      # instance methods
-      # -----------------------------------------------------------------------
-
       def initialize(name='', body='')
-        self.name = name
-        self.body = body
+        super(PAGE_DIR, name)
+        self.body = body # call set method instead of setting directly
       end
 
       def body(format=nil)
@@ -202,10 +275,21 @@ module Satellite
         @body = str
       end
 
+      alias :original_load :load
+      def load
+        original_load
+        raw = open(filepath).read
+        self.body = raw
+        self
+      end
+
       alias :original_save :save
       def save
-        original_save(@body)
+        original_save(body)
       end
+
+      # "foo.textile"
+      def filename; "#{name}.textile"; end
 
       # sort home above other pages, otherwise (case-insensitive) alphabetical order
       def <=>(other)
@@ -219,170 +303,18 @@ module Satellite
       end
 
       def to_html
-        WikiMarkup.process(@body)
+        wikimarkup.process(@body)
       end
     end
 
-    # "Upload" is a Hunk representing an uploaded file
     class Upload < Hunk
-
-      # -----------------------------------------------------------------------
-      # class methods
-      # -----------------------------------------------------------------------
-
-      class << self
-        def content_dir; UPLOAD_DIR; end
-      end
-
-      # -----------------------------------------------------------------------
-      # instance methods
-      # -----------------------------------------------------------------------
-
       def initialize(name='')
-        self.name = name
-      end
-    end
-
-    # all the wiki markup stuff should go in here
-    class WikiMarkup
-      WIKI_LINK_FMT = /\{\{([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
-      UPLOAD_LINK_FMT = /\{\{upload:([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
-      IMAGE_LINK_FMT = /\{\{image:([#{Hunk::VALID_FILENAME_CHARS}]+)\}\}/
-
-      AUTO_LINK_RE = %r{
-                      (                          # leading text
-                        <\w+.*?>|                # leading HTML tag, or
-                        [^=!:\'\"/]|             # leading punctuation, or
-                        ^                        # beginning of line
-                      )
-                      (
-                        (?:https?://)|           # protocol spec, or
-                        (?:www\.)                # www.*
-                      )
-                      (
-                        [-\w]+                   # subdomain or domain
-                        (?:\.[-\w]+)*            # remaining subdomains or domain
-                        (?::\d+)?                # port
-                        (?:/(?:(?:[~\w\+@%=-]|(?:[,.;:][^\s$]))+)?)* # path
-                        (?:\?[\w\+@%&=.;-]+)?    # query string
-                        (?:\#[\w\-]*)?           # trailing anchor
-                      )
-                      ([[:punct:]]|\s|<|$)       # trailing text
-                     }x
-
-      class << self
-        def process(str)
-          str = process_code_blocks(str)
-          str = process_wiki_links(str)
-          str = textile_to_html(str)
-          str = autolink(str)
-          str
-        end
-
-      private
-
-        # code blocks are like so (where lang is ruby/html/java/c/etc):
-        # {{{(lang)
-        # @foo = 'bar'
-        # }}}
-        def process_code_blocks(str)
-          str.gsub(/\{\{\{([\S\s]+?)\}\}\}/) do |s|
-            code = $1
-            if code =~ /^\((\w+)\)([\S\s]+)$/
-              lang, code = $1.to_sym, $2.strip
-            else
-              lang = :plaintext
-            end
-            code = CodeRay.scan(code, lang).html.div
-            # add surrounding newlines to avoid garbling during textile parsing
-            "\n\n<notextile>#{code}</notextile>\n\n"
-          end
-        end
-
-        # wiki links are like so: {{Another Page}}
-        # uploads are like: {{upload:foo.ext}}
-        def process_wiki_links(str)
-          str.gsub(UPLOAD_LINK_FMT) do |s|
-            begin
-              upload = Upload.load($1)
-            rescue GitDb::FileNotFound
-              upload = nil
-            end
-            notextile do
-              if upload
-                box(:upload, upload)
-              else
-                "<span class=\"nonexistent\">#{$1}</span>"
-              end
-            end
-          end.gsub(IMAGE_LINK_FMT) do |s|
-            begin
-              upload = Upload.load($1)
-            rescue GitDb::FileNotFound
-              upload = nil
-            end
-            notextile do
-              if upload
-                box(:image, upload)
-              else
-                "<span class=\"nonexistent\">#{$1}</span>"
-              end
-            end
-          end.gsub(WIKI_LINK_FMT) do |s|
-            name, uri = $1, PicoFramework::Controller::Uri.page($1)
-            notextile do
-              if Page.exists?(name)
-                "<a href=\"#{uri}\">#{name}</a>"
-              else
-                "<span class=\"nonexistent\">#{name}<a href=\"#{uri}\">?</a></span>"
-              end
-            end
-          end
-        end
-        
-        def box(type, upload)
-          uri_upload = PicoFramework::Controller::Uri.upload(upload.name)
-          uri_rename = PicoFramework::Controller::Uri.rename(upload)
-          uri_delete = PicoFramework::Controller::Uri.delete(upload)
-          out = ""
-          out << "<div class=\"#{type}-box\">"
-          out << "<a href=\"#{uri_upload}\"><img src=\"#{uri_upload}\" /></a>" if type == :image
-          out << "<span class=\"inner\">"
-          out << "<a class=\"upload\" href=\"#{uri_upload}\">#{upload.name}</a> "
-          out << "<a class=\"rename\" href=\"#{uri_rename}\"><span>Rename</span></a>"
-          out << "<a class=\"delete\" href=\"#{uri_delete}\"><span>Delete</span></a>"
-          out << "</span>"
-          out << "</div>"
-          out
-        end
-
-        # helper to wrap wrap block in notextile tags (block should return html string)
-        def notextile
-          str = yield
-          "<notextile>#{str.to_s}</notextile>" if str && str.any?
-        end
-
-        # textile -> html filtering
-        def textile_to_html(str)
-          RedCloth.new(str).to_html
-        end
-
-        # auto-link web addresses in plain text
-        def autolink(str)
-          str.gsub(AUTO_LINK_RE) do
-            all, a, b, c, d = $&, $1, $2, $3, $4
-            if a =~ /<a\s/i # don't replace URL's that are already linked
-              all
-            else
-              "#{a}<a href=\"#{ b == 'www.' ? 'http://www.' : b }#{c}\">#{b + c}</a>#{d}"
-            end
-          end
-        end
+        super(UPLOAD_DIR, name)
       end
     end
   end
 
-  # controllers definitions go here
+  # controllers definitions
   module Controllers
     VALID_URI_CHARS = '\w \+\%\-\.'
     NAME = "([#{VALID_URI_CHARS}]+)"
@@ -390,137 +322,9 @@ module Satellite
     VALID_SEARCH_STRING_CHARS = '0-9a-zA-Z\+\%\`\~\!\^\*\(\)\_\-\[\]\{\}\\\|\'\"\.\<\>'
     SEARCH_STRING = "([#{VALID_SEARCH_STRING_CHARS}]+)"
 
-    # reopen framework controller class to provide some app-specific logic
-    class PicoFramework::Controller      
-      class << self
-        # pass title and uri mappings into templates too
-        alias :original_render :render
-        def render(template, title, params={})
-          common_params = { :title => title, :uri => Uri, :conf => CONF,
-            :pages => Models::Page.list, :conflicts => Models::Page.conflicts }
-          original_render(template, params.merge!(common_params))
-        end
-        
-        # need to override 404 method to use new render method
-        def return_404(request_uri)
-          log.warn "No route found for '#{request_uri}', returning 404."
-          respond(404) do |out|
-            out.write render('404', '404, Baby', :request_uri => request_uri)
-          end
-        end
-      end
-      
-      # pass title and uri mappings into templates too
-      alias :original_render :render
-      def render(template, title, context={})
-        log.debug "Rendering #{template}"
-        self.class.respond(200) do |out|
-          context[:referrer] = @referrer
-          out.write self.class.render(template, title, context)
-        end
-      end
-
-      # for controllers that can share some page/upload logic
-      # in general, pages should redirect back to the page itself,
-      # and uploads should redirect back to the list page
-      def page_or_upload(type, name)
-        case type
-        when 'page'
-          @klass = Models::Page
-          @cancel_uri = @referrer || Uri.page(name)
-        when 'upload'
-          @klass = Models::Upload
-          @cancel_uri = @referrer || Uri.list
-        end
-      end
-      
-      # process the return_to uri
-      def return_to(bad_uri=nil)
-        return_to = @input['return_to']
-        if return_to
-          return_to.strip!
-          if return_to.any?
-            if bad_uri
-              return return_to unless return_to.match(/#{bad_uri}$/)
-            else
-              return return_to
-            end
-          end
-        end
-        nil
-      end
-      
-      # process a file upload
-      def process_upload
-        log.debug "Uploaded: #{@input}"
-        filename = @input['Filedata'][:filename].strip
-
-        # save upload
-        upload = Models::Upload.new(filename)
-        upload.save(@input['Filedata'][:tempfile])
-        
-        # allow extra post-save logic
-        yield upload if block_given?
-
-        # respond with plain text (since it's a flash plugin)
-        respond_plaintext "Thanks!"
-      end
-
-      # uri mappings
-      # TODO somehow generate these from routing table?
-      class Uri
-        class << self
-          def page(name) "/page/#{escape(name)}" end
-          def edit_page(name) "/page/#{escape(name)}/edit" end
-          def rename(hunk)
-            case hunk
-            when Models::Page
-              "/page/#{escape(hunk.name)}/rename"
-            when Models::Upload
-              "/upload/#{escape(hunk.name)}/rename"
-            else
-              log.error "#{hunk} is neither a Page nor an Upload"
-              ""
-            end
-          end
-          def delete(hunk)
-            case hunk
-            when Models::Page
-              "/page/#{escape(hunk.name)}/delete"
-            when Models::Upload
-              "/upload/#{escape(hunk.name)}/delete"
-            else
-              log.error "#{hunk} is neither a Page nor an Upload"
-              ""
-            end
-          end
-          def resolve_conflict(name) "/page/#{escape(name)}/resolve" end
-          def new_page() '/new' end
-          def list() '/list' end
-          def home() '/page/Home' end
-          def search() '/search' end
-          def upload(name) "/uploads/#{escape(name)}" end
-          def upload_file(page_name=nil)
-            if page_name
-              "/page/#{escape(page_name)}/upload"
-            else
-              "/upload"
-            end
-          end
-          def rename_upload(name) "/upload/#{escape(name)}/rename" end
-          def delete_upload(name) "/upload/#{escape(name)}/delete" end
-          def help() '/help' end
-          def static(file)
-            lastmod = File.ctime(File.join(CONF.static_dir, file)).strftime('%Y%m%d%H%M')
-            "/static/#{file}?#{lastmod}"
-          end
-        end
-      end
-    end
-
     class IndexController < controller '/'
-      def get; redirect Uri.home; end
-      def post; redirect Uri.home; end
+      def get; redirect urimap.home; end
+      def post; redirect urimap.home; end
     end
 
     class PageController < controller "/page/#{NAME}", "/page/#{NAME}/(edit|resolve)"
@@ -538,16 +342,16 @@ module Satellite
           if page
             render 'show_page', page.name, :page => page
           else
-            redirect Uri.edit_page(name)
+            redirect urimap.edit_page(name)
           end
         when 'edit'
           page ||= Models::Page.new(name)
-          render 'edit_page', "Editing #{page.name}", :page => page, :cancel_uri => (@referrer || Uri.page(name))
+          render 'edit_page', "Editing #{page.name}", :page => page, :cancel_uri => (@referrer || urimap.page(name))
         when 'resolve'
           if page
-            render 'resolve_conflict_page', "Resolving #{page.name}", :page => page, :cancel_uri => (@referrer || Uri.page(name))
+            render 'resolve_conflict_page', "Resolving #{page.name}", :page => page, :cancel_uri => (@referrer || urimap.page(name))
           else
-            redirect Uri.edit_page(name)
+            redirect urimap.edit_page(name)
           end
         else
           raise RuntimeError.new("PageController does not support the '#{action}' action.")
@@ -557,20 +361,20 @@ module Satellite
       def post(name, action=nil)
         page = Models::Page.new(name, @input['content'])
         page.save
-        redirect return_to || Uri.page(page.name)
+        redirect return_to || urimap.page(page.name)
       end
     end
 
     class NewPageController < controller '/new'
       def get
-        render 'new_page', 'Add page', :page => Models::Page.new, :cancel_uri => (@referrer || Uri.list)
+        render 'new_page', 'Add page', :page => Models::Page.new, :cancel_uri => (@referrer || urimap.list)
       end
 
       def post
         page = Models::Page.new(@input['name'].strip, @input['content'])
-        unless Models::Page.exists?(page.name)
+        unless page.exists?
           page.save
-          redirect Uri.page(page.name) # don't worry about return_to
+          redirect urimap.page(page.name) # don't worry about return_to
         else
           render 'new_page', 'Add page', :page => page, :error => "A page named #{page.name} already exists"
         end
@@ -586,16 +390,17 @@ module Satellite
 
       def post(type, name)
         page_or_upload(type, name)
-        hunk = @klass.rename(name, @input['new_name'].strip)
+        hunk = @klass.new(name)
+        hunk.rename(@input['new_name'].strip)
 
         # figure out where to redirect to
-        uri = return_to(Uri.send(type, name))
+        uri = return_to(urimap.send(type, name))
         if uri
           redirect uri
         elsif @klass == Models::Page
-          redirect Uri.page(hunk.name)
+          redirect urimap.page(hunk.name)
         elsif @klass == Models::Upload
-          redirect Uri.list
+          redirect urimap.list
         end
       end
     end
@@ -611,22 +416,22 @@ module Satellite
         page_or_upload(type, name)
         hunk = @klass.load(name)
         hunk.delete!
-        redirect return_to(Uri.send(type, name)) || Uri.list
+        redirect return_to(urimap.send(type, name)) || urimap.list
       end
     end
 
     class ListController < controller '/list'
       def get
         # @pages is populated for all pages, since it is used in goto jump box
-        render 'list', 'All pages and uploads', :uploads => Models::Upload.list
+        render 'list', 'All pages and uploads', :uploads => Models::Uploads.new.list
       end
     end
 
-    class SearchController < controller '/search', "/search\\?query=#{SEARCH_STRING}"
-      def get(query=nil)
-        if query
-          log.debug "searched for: #{query}"
-          results = Models::Page.search(query)
+    class SearchController < controller '/search'
+      def get
+        if query = @input['query']
+          logger.debug "searched for: #{query}"
+          results = Models::Pages.new.search(query)
           render 'search', "Searched for: #{query}", :query => query, :results => results
         else
           render 'search', 'Search'
@@ -648,14 +453,14 @@ module Satellite
     class UploadController < controller '/upload', "/upload/#{NAME}"
       def get(name='')
         # files are served up directly by Mongrel (at URI "/uploads")
-        redirect Uri.upload(name)
+        redirect urimap.upload(name)
       end
-      
+
       def post
         process_upload
       end
     end
-    
+
     class HelpController < controller '/help'
       def get
         render 'help', 'Help'
@@ -663,43 +468,133 @@ module Satellite
     end
   end
 
-  class << self
+  # uri mappings
+  # TODO somehow generate these from routing table?
+  class UriMap
+    def initialize(static_dir)
+      @static_dir = static_dir
+    end
+
+    def page(name) "/page/#{escape(name)}" end
+    def edit_page(name) "/page/#{escape(name)}/edit" end
+    def rename(hunk)
+      case hunk
+      when Models::Page
+        "/page/#{escape(hunk.name)}/rename"
+      when Models::Upload
+        "/upload/#{escape(hunk.name)}/rename"
+      else
+        logger.error "#{hunk} is neither a Page nor an Upload"
+        ""
+      end
+    end
+    def delete(hunk)
+      case hunk
+      when Models::Page
+        "/page/#{escape(hunk.name)}/delete"
+      when Models::Upload
+        "/upload/#{escape(hunk.name)}/delete"
+      else
+        logger.error "#{hunk} is neither a Page nor an Upload"
+        ""
+      end
+    end
+    def resolve_conflict(name) "/page/#{escape(name)}/resolve" end
+    def new_page() '/new' end
+    def list() '/list' end
+    def home() '/page/Home' end
+    def search() '/search' end
+    def upload(name) "/uploads/#{escape(name)}" end
+    def upload_file(page_name=nil)
+      if page_name
+        "/page/#{escape(page_name)}/upload"
+      else
+        "/upload"
+      end
+    end
+    def rename_upload(name) "/upload/#{escape(name)}/rename" end
+    def delete_upload(name) "/upload/#{escape(name)}/delete" end
+    def help() '/help' end
+    def static(file)
+      lastmod = File.ctime(File.join(@static_dir, file)).strftime('%Y%m%d%H%M')
+      "/static/#{file}?#{lastmod}"
+    end
+  end
+
+  class Server
+    attr_reader :boot
+
+    def initialize(env)
+      @env = env
+      @boot = Pico::Bootstrapper.new(@env, Satellite::Controllers)
+      setup_satellite_dependencies
+    end
+
+    def application
+      app = @boot.create_application do |app, container|
+        add_uploads_handler(app, container.conf)
+      end
+      app
+    end
+
+    def start
+      @boot.run do |app, container|
+        add_uploads_handler(app, container.conf)
+        DbSynchronizer.new(container.conf.sync_frequency).start
+      end
+    end
+
+  private
+
+    # create UriMap, DB, and WikiMarkup dependencies
+    def setup_satellite_dependencies
+      @boot.dependency_container.class_eval do
+        def urimap
+          Satellite::UriMap.new(container.conf.static_dir)
+        end
+        provide :db, GitDb
+        provide :wikimarkup, Satellite::WikiMarkup
+      end
+    end
+
+    def add_uploads_handler(app, conf)
+      app.static_dirs.store('/uploads', File.join(conf.data_dir, Satellite::Models::UPLOAD_DIR))
+    end
+  end
+
+  class DbSynchronizer
+    inject :db
+    inject :logger
+
+    def initialize(sync_frequency)
+      @sync_frequency = sync_frequency
+    end
+
     def sync
-      log.info "Synchronizing with master repository."
+      logger.info "Synchronizing with master repository."
       begin
-        GitDb.sync
+        db.sync
       rescue GitDb::MergeConflict => e
         # TODO surface on front-end? already happens on page-load, though...
-        log.warn "Encountered conflicts during sync. The following files must be merged manually:" +
-          GitDb.conflicts.collect {|c| "  * #{c}" }.join("\n")
+        logger.warn "Encountered conflicts during sync. The following files must be merged manually:" +
+          db.conflicts.collect {|c| "  * #{c}" }.join("\n")
       rescue GitDb::ConnectionFailed
-        log.warn "Failed to connect to master repository during sync operation."
+        logger.warn "Failed to connect to master repository during sync operation."
       end
-      log.info "Sync complete."
+      logger.info "Sync complete."
     end
 
-    def create_server
-      PicoFramework::Server.new(CONF.server_ip, CONF.server_port, Controllers, { '/uploads' => File.join(CONF.data_dir, Models::UPLOAD_DIR) })
-    end
-    
     def start
-      # first, create the server (this sets up the logger, among other things)
-      server = create_server
-
       # kill the whole server if an unexpected exception is encounted in the sync
       Thread.abort_on_exception = true
 
       # spawn thread to sync with master repository
       Thread.new do
         while true
-          # sleep until next sync
-          sleep CONF.sync_frequency
+          sleep @sync_frequency
           sync
         end
       end
-
-      # start server
-      server.start
     end
   end
 end

@@ -1,183 +1,198 @@
-# PicoFramework is an itty-bitty framework with a Rack interface. Like, really
-# small. A trillionth the size of giants like Rails and Merb.
-#
-# It supports controllers and rhtml templates and file uploads and that is
-# pretty much it.
-#
-# By default, it uses mongrel, but it would be *super* easy to use any other
-# Ruby app server (just change the Rack handler in PicoFramwork::Server.start).
-#
+require 'rubygems'
+require 'rack'
+require 'logger'
+require 'erubis'
 
-%w{ configuration rubygems rack mongrel fileutils tempfile logger }.each {|l| require l }
+require File.join(File.expand_path(File.dirname(__FILE__)), 'configuration.rb')
 
-module PicoFramework
+# dependency injection library
+require File.join(File.expand_path(File.dirname(__FILE__)), '../vendor/dissident/dissident.rb')
+
+module Pico
+
   # base controller class
   # - methods extending this should implement get and/or post methods
   # - this class should never be subclassed directly! instead, use the
   #   controller(*routes) method
   class Controller
-    class << self
-      # render a template to a string
-      def render(template, context)
-        inner = process_template(template, context)
-        context.store(:inner, inner)
-        process_template('structure', context)
-      end
-      
-      # construct a Rack::Response object
-      # block should take output as arg and call output.write
-      def respond(status, header={}, &block)
-        Rack::Response.new([], status, header).finish(&block)
+    inject :logger
+
+    class Response
+      def initialize(status, header={}, &block)
+        @status, @header, @block = status, header, block
       end
 
-      # return the 404 page
-      def return_404(request_uri)
-        log.warn "No route found for '#{request_uri}', returning 404."
-        respond(404) do |out|
-          if File.exists? template_path('404')
-            out.write render('404', :request_uri => request_uri)
-          else
-            out.write "<pre>404, baby. There ain't nothin' at #{request_uri}.</pre>"
-          end
+      def response
+        Rack::Response.new([], @status, @header).finish(&@block)
+      end
+    end
+
+    # 200 OK
+    class Success < Response
+      def initialize(str, header={})
+        super(200, header) do |out|
+          out.write(str)
+        end
+      end
+    end
+
+    # 303 See Other
+    class Redirect < Response
+      def initialize(uri)
+        super(303, { 'Location' => uri })
+      end
+    end
+
+    # 404 Not Found
+    class NotFound < Response
+      def initialize(request_uri)
+        @request_uri = request_uri
+        super(404) do |out|
+          out.write content
         end
       end
 
-    private
-      
-      # process an erubis template with the provided context
-      def process_template(template, context={})
+      # use 404 template if it exists
+      def content
+        begin
+          Renderer.new('404', :request_uri => @request_uri).render_html
+        rescue Renderer::NoTemplateFound
+          "<pre>404, baby. There ain't nothin' at #{@request_uri}.</pre>"
+        end
+      end
+    end
+
+    def render(template, context={})
+      logger.debug "Rendering #{template}"
+      html = Renderer.new(template, context).render_html
+      Success.new(html).response
+    end
+
+    def redirect(uri)
+      logger.debug "Redirecting to #{uri}"
+      Redirect.new(uri).response
+    end
+  end
+
+  class Renderer
+    class NoTemplateFound < RuntimeError; end
+
+    inject :conf
+
+    def initialize(template, context={})
+      @template, @context = template, context
+    end
+
+    def render_html
+      inner = process_template(@template, @context)
+      @context.store(:inner, inner)
+      process_template('structure', @context)
+    end
+
+  private
+
+    # template path is configurable
+    def template_path(template)
+      File.join(conf.template_dir, "#{template}.rhtml")
+    end
+
+    # process an erubis template with the provided context
+    def process_template(template, context={})
+      begin
         markup = open(template_path(template)).read
         partial_function = lambda {|*a| t, h = *a; process_template("_#{t}", h || {}) }
         context = context.merge({ :partial => partial_function })
         context[:error] ||= nil
         Erubis::Eruby.new(markup).evaluate(context)
+      rescue Errno::ENOENT => e
+        raise NoTemplateFound.new(e)
       end
-
-      # template path is configurable
-      def template_path(template)
-        File.join(CONF.template_dir, "#{template}.rhtml")
-      end
-    end
-
-    # 200: render template
-    def render(template, context={})
-      log.debug "Rendering #{template}"
-      self.class.respond(200) do |out|
-        out.write self.class.render(template, context)
-      end
-    end
-
-    # 303: redirect
-    def redirect(uri)
-      log.debug "Redirecting to #{uri}"
-      self.class.respond(303, { 'Location' => uri })
-    end
-
-    # respond plain-text
-    def respond_plaintext(str, status=200)
-      log.debug "Responding with '#{status}: #{str}'"
-      self.class.respond(status, { 'Content-Type' => 'text/plain' }) do |out|
-        out.write str
-      end
-    end
-    
-    def to_s
-      self.class.to_s
     end
   end
 
-  # router class
-  # - handlers all the request routing and argument parsing
+  # routes requests to controllers
   class Router
     class NoPathFound < RuntimeError; end
 
-    def initialize(controller_module)
-      add_controllers(Router.find_controllers(controller_module))
+    inject :logger
+
+    def route_map
+      @route_map ||= {}
     end
 
-    class << self
-      # given a module containing controllers, inspect the constants and return controller instances
-      def find_controllers(controller_module)
-        controller_module.constants.map do |c|
-          eval("#{controller_module}::#{c}")
-        end.select do |c|
-          c.kind_of?(Class) && c.ancestors.include?(Controller)
-        end.map do |c|
-          c.new
-        end
-      end
-
-      def regex(route)
-        /^#{route}\/?\??$/
-      end
-
-      def extract_arguments(uri, regex)
-        log.debug "Extracting arguments from '#{uri}'"
-        log.debug "  Attempting to match #{regex}"
-        if m = regex.match(uri)
-          log.debug "    Found #{m.size - 1} arguments"
-          return m.to_a[1..-1].collect {|a| unescape(a) }
-        end
-        []
-      end
+    # add the controllers contained in the given module to the routing table
+    def add_controller_module(controller_module)
+      logger.debug "Router: adding controllers in #{controller_module} to route map"
+      controllers = find_controllers(controller_module)
+      add_controllers(controllers)
     end
 
     # add the given controller instances to the routing table
     def add_controllers(controllers)
-      @route_map ||= {}
-      log.debug "Router: adding controllers to route map: #{controllers.join(',')}"
-      controllers.each { |c| c.routes.each {|r| @route_map[r] = c } }
-      build_index
-    end
-
-    # priotize the routes in the routing table (keep an array of sorted keys to the route_map hash table)
-    def build_index
-      @routes = @route_map.keys.sort
+      logger.debug "Router: adding controllers to route map: #{controllers.join(',')}"
+      controllers.each { |c| c.routes.each {|r| route_map.store(r, c) } }
     end
 
     # process a given uri, returning the controller instance and extracted uri arguments
     def process(uri)
-      # check if necessary to auto-reload app on each request (if turned on in config)
-      if CONF.auto_reload
-        log.debug "Checking if app needs to be reloaded"
-        RELOADER.reload_app
-      end
-
-      # routing
-      log.debug "Router: attempting to match #{uri}"
-      @routes.each do |r|
-        regex = Router.regex(r)
-        log.debug "  Trying #{regex}"
+      logger.debug "Router: attempting to match #{uri}"
+      route_map.keys.sort.each do |route|
+        regex = /^#{route}\/?\??$/
+        logger.debug "  Trying #{regex}"
         if regex.match(uri)
-          # route r is correct
-          controller = @route_map[r]
-          args = Router.extract_arguments(uri, regex)
-          log.debug "    Success! controller is #{controller}, args are #{args.join(', ')}"
+          # route is correct
+          controller = route_map[route]
+          args = extract_arguments(uri, regex)
+          logger.debug "    Success! controller is #{controller}, args are #{args.join(', ')}"
           return controller, args
         end
       end
       raise NoPathFound
     end
 
+  private
+
+    # extract arguments encoded in the uri
+    def extract_arguments(uri, regex)
+      logger.debug "Extracting arguments from '#{uri}'"
+      logger.debug "  Attempting to match #{regex}"
+      if m = regex.match(uri)
+        logger.debug "    Found #{m.size - 1} arguments"
+        return m.to_a[1..-1].collect {|a| unescape(a) }
+      end
+      []
+    end
+
+    # given a module containing controllers, inspect the constants and return controller instances
+    def find_controllers(controller_module)
+      controller_module.constants.map do |c|
+        eval("#{controller_module}::#{c}")
+      end.select do |c|
+        c.kind_of?(Class) && c.ancestors.include?(Controller)
+      end.map do |c|
+        c.new
+      end
+    end
   end
 
-  # request handler
-  # call(env) method provides Rack interface 
+  # implements the Rack application interface
   class RequestHandler
-    def initialize(controller_module)
-      @router = Router.new(controller_module)
+    inject :logger
+
+    def initialize(router)
+      @router = router
     end
 
     def call(env)
       begin
-        log.debug 'Hit RequestHandler.call()'
+        logger.debug 'Hit RequestHandler.call()'
 
         request = Rack::Request.new(env)
-        log.debug "#{request.request_method} #{request.path_info}"
+        logger.debug "#{request.request_method} #{request.path_info}"
 
         controller, args = @router.process(request.path_info)
 
-        log.debug "Referrer: #{request.env['HTTP_REFERER']}"
+        logger.debug "Referrer: #{request.env['HTTP_REFERER']}"
 
         # TODO instead of injecting instance variables, can we use metaprogramming
         # to define get/post methods that have referrer and input as args?
@@ -196,68 +211,133 @@ module PicoFramework
           raise ArgumentError.new("Only GET and POST are supported, not #{request.request_method}")
         end
       rescue Router::NoPathFound
-        Controller.return_404(request.path_info)
+        Controller::NotFound.new(request.path_info).response
       end
     end
   end
 
-  # runnable server class
-  # expects RequestHandler to implement teh Rack interface (a call(env) method)
-  class Server
-    def initialize(addr, port, controller_module, static_dirs={})
-      @addr, @port, @controller_module, @static_dirs = addr, port, controller_module, static_dirs
+  # bootstrap the dependency injection and start the app
+  class Bootstrapper
+    attr_reader :dependency_container
 
-      # initialize logger
-      FileUtils::mkdir_p CONF.log_dir
-      logger = Logger.new(File.join(CONF.log_dir, CONF.log_file_name))
-      logger.level = Logger.const_get(CONF.log_level.to_s.upcase)
-      PicoFramework.logger = logger
+    def initialize(env, controller_module)
+      @env, @controller_module = env, controller_module
+      @dependency_container = Class.new(Dissident::Container)
+      add_pico_dependencies
     end
 
-    # set up the Rack stack to use (depends on configuration)
-    def application
+    # just create the app instance -- don't actually run it
+    def create_application
+      Dissident.with @dependency_container do |container|
+        # create the application
+        app = Pico::Application.new(@controller_module)
+
+        # optionally do some more set up before starting the server
+        yield(app, container) if block_given?
+
+        app
+      end
+    end
+
+    # create an app server and start it
+    def run(&proc)
+      Dissident.with @dependency_container do |container|
+        # create the application
+        app = create_application(&proc)
+
+        # start the app server
+        app.create_server.start
+      end
+    end
+
+  private
+
+    # define the config and logger dependencies
+    def add_pico_dependencies
+      # set up conf
+      @dependency_container.class_eval "def conf; Configuration.load(:#{@env}); end"
+
+      # set up logger
+      @dependency_container.class_eval do
+        def logger
+          FileUtils::mkdir_p container.conf.log_dir
+          l = Logger.new(File.join(container.conf.log_dir, container.conf.log_file_name))
+          l.level = Logger.const_get(container.conf.log_level.to_s.upcase)
+          l
+        end
+      end
+    end
+  end
+
+  # pico application
+  class Application
+    inject :conf
+    inject :logger
+
+    def initialize(controller_module)
+      @controller_module = controller_module
+    end
+
+    # uri->directory mappings for directories to serve statically
+    def static_dirs
+      @static_dirs ||= { '/static' => conf.static_dir }
+    end
+
+    # create a Rack application stack
+    def rack_app
       # primary app
-      main = RequestHandler.new(@controller_module)
+      main = pico_app
       main = Rack::Lint.new(main)
-      
+
       # static directories
-      static_dirs = { '/static' => CONF.static_dir }.merge(@static_dirs)
-      static_dirs.each {|uri,path| static_dirs[uri] = Rack::File.new(path) }
-      
+      static_map = {}
+      static_dirs.each {|uri,path| static_map[uri] = Rack::File.new(path) }
+
       # uri mappings
-      app = Rack::URLMap.new({ '/' => main }.merge(static_dirs))
+      app = Rack::URLMap.new({ '/' => main }.merge(static_map))
 
       # common middleware
-      app = Rack::CommonLogger.new(app, PicoFramework.logger)
-      app = Rack::ShowExceptions.new(app) if CONF.prettify_exceptions
+      app = Rack::CommonLogger.new(app, logger)
+      app = Rack::ShowExceptions.new(app) if conf.prettify_exceptions
 
       app
     end
-    
+
+    # create an app server
+    def create_server
+      Server.new(conf.app_name, conf.server_ip, conf.server_port, rack_app)
+    end
+
+  private
+
+    # create a Rack-compatible application
+    def pico_app
+      router = Router.new
+      router.add_controller_module(@controller_module)
+      RequestHandler.new(router)
+    end
+  end
+
+  # application server
+  class Server
+    def initialize(app_name, addr, port, rack_app)
+      @app_name, @addr, @port, @rack_app = app_name, addr, port, rack_app
+    end
+
     # start app server. uses mongrel by default, but that's easy to change.
     def start
       begin
-        puts "** Starting #{CONF.app_name}"
-        Rack::Handler::Mongrel.run(application, :Host => @addr, :Port => @port) do |server|
-          puts "** #{CONF.app_name} is now running at http://#{@addr}:#{@port}/"
+        puts "** Starting #{@app_name}"
+        Rack::Handler::Mongrel.run(@rack_app, :Host => @addr, :Port => @port) do |server|
+          puts "** #{@app_name} is now running at http://#{@addr}:#{@port}/"
           trap(:INT) do
             server.stop
-            puts "\n** Stopping #{CONF.app_name}"
+            puts "\n** Stopping #{@app_name}"
           end
         end
       rescue Errno::EADDRINUSE => e
         puts "** Port #{@port} is already in use"
       end
-    end
-  end
-
-  class << self
-    def logger=(new_logger)
-      @@logger = new_logger
-    end
-
-    def logger
-      @@logger ||= nil
     end
   end
 end
@@ -271,33 +351,13 @@ def unescape(s); Rack::Utils.unescape(s); end
 # never subclass Controller directly! instead, use this method which creates a
 # subclass with embedded route information
 def controller(*routes)
-  c = Class.new(PicoFramework::Controller)
+  c = Class.new(Pico::Controller)
   c.class_eval { define_method(:routes) { routes } }
   c
 end
 
-# swallow all methods passed in
-class Zombie
-  def method_missing(name, *args, &block)
-    # do nothing
-  end
-end
-
-# shortcut to logger
-def log
-  if logger = PicoFramework.logger
-    logger
-  else
-    # if no logger is set up, use a zombie class instead
-    puts "No logger is set up -- logging to /dev/null"
-    Zombie.new
-  end
-end
-
 # save some input (string, tempfile, etc) to the filesystem
 def save_file(input, destination)
-  log.debug "Saving #{input} to #{destination}"
-
   # create the destination directory if it doesn't already exist
   dir = File.dirname(destination)
   FileUtils.mkdir_p(dir) unless File.exists?(dir)

@@ -11,7 +11,8 @@ def quote(s)
 end
 
 # wrapper for ruby/git bridge
-module GitDb
+class GitDb
+  inject :conf
 
   class ConfigurationError < RuntimeError; end
   class FileNotFound < RuntimeError; end
@@ -19,111 +20,109 @@ module GitDb
   class MergeConflict < RuntimeError; end
   class ConnectionFailed < RuntimeError; end
 
-  # cache repository
-  @@repo = nil
+  def initialize
+    @repo = nil
+  end
 
-  class << self
-    def sync
-      repo.pull
-      repo.push
-    end
+  def sync
+    repo.pull
+    repo.push
+  end
 
-    def conflicts
-      repo.ls_unmerged_files.keys
-    end
+  def push
+    repo.push
+  end
 
-    def save(file, message)
-      repo.add(quote(file))
-      repo.commit(message)
-    end
+  def conflicts
+    repo.ls_unmerged_files.keys
+  end
 
-    def mv(from, to, message)
-      repo.mv(from, to)
-      repo.commit(message)
-    end
+  def save(file, message)
+    repo.add(quote(file))
+    repo.commit(message)
+  end
 
-    def rm(file, message)
-      repo.remove(quote(file))
-      repo.commit(message)
-    end
+  def mv(from, to, message)
+    repo.mv(from, to)
+    repo.commit(message)
+  end
 
-    def search(str)
-      out = {}
-      repo.grep(str, nil, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
-      out
-    end
+  def rm(file, message)
+    repo.remove(quote(file))
+    repo.commit(message)
+  end
 
-    def repack
-      repo.repack
-    end
-    
-    def obliterate!
-      if @@repo
-        repo.obliterate!
-        @@repo = nil
-      else
-        begin
-          Repo.open.obliterate!
-        rescue ArgumentError => e
-          # repo doesn't exist yet -- nothing to obliterate
-        end
+  def search(str)
+    out = {}
+    repo.grep(str, nil, :ignore_case => true).each {|k, v| out[k.sub(/^.+:/, '')] = v }
+    out
+  end
+
+  def repack
+    repo.repack
+  end
+
+  def obliterate!
+    if @repo
+      @repo.obliterate!
+      @repo = nil
+    else
+      begin
+        open
+        @repo.obliterate!
+        @repo = nil
+      rescue ArgumentError => e
+        # repo doesn't exist yet -- nothing to obliterate
       end
     end
   end
 
-  private
+private
 
-  class << self
-    def repo
-      @@repo ||= open_or_create
-    end
+  def repo
+    @repo ||= open_or_clone
+  end
 
-    def open_or_create
-      begin
-        Repo.open
-      rescue ArgumentError => e
-        # repo doesn't exist yet
-        Repo.clone
-      end
+  def open_or_clone
+    begin
+      open
+    rescue ArgumentError => e
+      # repo doesn't exist yet
+      clone
     end
+    @repo
+  end
+
+  def open
+    @repo = Repo.new(Git.open(conf.data_dir))
+    @repo.update_config
+  end
+
+  def clone
+    # create data directory
+    FileUtils.mkdir_p(conf.data_dir)
+    FileUtils.cd(conf.data_dir)
+
+    # create git repo
+    @repo = Repo.new(Git.init)
+
+    # set user params
+    @repo.config('user.name', conf.user_name)
+    @repo.config('user.email', conf.user_email)
+
+    # convert line endings to LF on commit
+    @repo.config('core.autocrlf', 'input')
+
+    # add origin
+    @repo.add_remote('origin', conf.master_repository_uri)
+
+    # pull down initial content
+    @repo.pull
   end
 
   # private inner class that encapsulates Git operations
   class Repo
-
-    # static methods
-    class << self
-      def open
-        r = Repo.new(Git.open(CONF.data_dir))
-        r.update_config
-        r
-      end
-
-      def clone
-        # create data directory
-        FileUtils.mkdir_p(CONF.data_dir)
-        FileUtils.cd(CONF.data_dir)
-
-        # create git repo
-        r = Repo.new(Git.init)
-
-        # set user params
-        r.config('user.name', CONF.user_name)
-        r.config('user.email', CONF.user_email)
-
-        # convert line endings to LF on commit
-        r.config('core.autocrlf', 'input')
-
-        # add origin
-        r.add_remote('origin', CONF.master_repository_uri)
-
-        # pull down initial content
-        r.pull
-
-        # return repository instance
-        return r
-      end
-    end
+    inject :conf
 
     # instance methods
     def initialize(git_instance)
@@ -132,9 +131,9 @@ module GitDb
 
     def update_config
       {
-        'user.name' => CONF.user_name,
-        'user.email' => CONF.user_email,
-        'remote.origin.url' => CONF.master_repository_uri
+        'user.name' => conf.user_name,
+        'user.email' => conf.user_email,
+        'remote.origin.url' => conf.master_repository_uri
       }.each do |k, v|
         if (old = @git.config(k)) != v
           log.info "Updating GitDB configuration: Changing #{k} from '#{old}' to '#{v}'"
@@ -148,9 +147,11 @@ module GitDb
         @git.push
       rescue Git::GitExecuteError => e
         case e.message
+        when /src refspec master does not match any/
+          # no local commits yet, we can safely ignore it
         when /The remote end hung up unexpectedly/
           # no internet or bad host address
-          raise ConnectionFailed.new
+          raise ConnectionFailed.new(e.message)
         else
           puts "Unexpected error in GitDb::Repo.push: \"#{e.message}\""
           raise e
@@ -162,23 +163,27 @@ module GitDb
       begin
         # the documentation claims that the second argument should just be
         # 'master', but that doesn't seem to work
-        @git.pull('origin', 'origin/master', 'pulling from remote repository')
+        # @git.pull('origin', 'master', 'pulling from remote repository')
+        @git.fetch('origin')
+        @git.merge('origin/master', 'pulling from remote repository')
       rescue Git::GitExecuteError => e
         case e.message
         when /no matching remote head/, /Needed a single revision/
           # a 'no matching remote head' error is returned when the remote repo
           # exists but is currently empty, so we can safely ignore it
+        when /not something we can merge/
+          # new repo with no commits -- we can safely ignore it
         when /unable to chdir or not a git archive/
           # remote repo doesn't exist!
           raise ConfigurationError.new("It appears that the remote repository " +
-            "(#{CONF.master_repository_uri}) does not exist. Please try running " +
+            "(#{conf.master_repository_uri}) does not exist. Please try running " +
             "the 'create_master_repo' script to create the repository.")
         when /Merge conflict/, /You are in the middle of a conflicted merge/
           # someone committed a conflicting change to the remote repository
           raise MergeConflict.new(e.message)
         when /The remote end hung up unexpectedly/
           # no internet or bad host address
-          raise ConnectionFailed.new
+          raise ConnectionFailed.new(e.message)
         else
           puts "Unexpected error in GitDb::Repo.pull: \"#{e.message}\""
           raise e
@@ -204,11 +209,11 @@ module GitDb
 
     def mv(from, to)
       begin
-        FileUtils.mv(File.join(CONF.data_dir, from), File.join(CONF.data_dir, to))
+        FileUtils.mv(File.join(conf.data_dir, from), File.join(conf.data_dir, to))
       rescue Errno::ENOENT => e
         case e.message
         when /No such file or directory/
-          raise FileNotFound.new("File #{File.join(CONF.data_dir, from)} does not exist")
+          raise FileNotFound.new("File #{File.join(conf.data_dir, from)} does not exist")
         else
           raise e
         end
@@ -229,10 +234,10 @@ module GitDb
         end
       end
     end
-    
+
     def obliterate!
-      FileUtils.cd(CONF.app_dir)
-      FileUtils.rm_rf(CONF.data_dir)
+      FileUtils.cd(conf.app_dir)
+      FileUtils.rm_rf(conf.data_dir)
     end
 
     def method_missing(name, *args)
