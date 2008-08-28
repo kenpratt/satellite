@@ -537,10 +537,10 @@ module Satellite
       app
     end
 
-    def start
+    def start(sync=true)
       @boot.run do |app, container|
         add_uploads_handler(app, container.conf)
-        DbSynchronizer.new(container.conf.sync_frequency).start
+        DbSynchronizer.new(container.conf.sync_frequency).start if sync
       end
     end
 

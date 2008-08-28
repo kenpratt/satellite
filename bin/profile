@@ -5,33 +5,41 @@
 
 RESULTS_DIR = File.join(File.expand_path(File.dirname(__FILE__)), '../tmp')
 
+require 'rubygems'
+require 'open-uri'
+
 # add library directory to load path
 LIBDIR = File.join(File.expand_path(File.dirname(__FILE__)), '../lib')
 $LOAD_PATH.unshift(LIBDIR)
 
-# load profiling configuration
-require 'configuration'
-CONF = Configuration.load(:profiling)
+require 'satellite'
 
-if CONF.auto_reload
-  # turn on app auto-reloading
-  require 'reloader'
-  RELOADER = Reloader.new(File.join(LIBDIR, 'satellite.rb'))
-else
-  # no auto-reloading
-  require 'satellite'
-end
+def main
+  # action = lambda { open 'http://localhost:3000/list' }
+  action = lambda { open 'http://localhost:3000/search?query=foo' }
 
-def start_up
-  # kill the whole server if an unexpected exception is encounted in the sync
-  Thread.abort_on_exception = true
-  Thread.new do
-    Satellite.start
+  delay(5) do
+    warm_up(1, action)
+    profile_with_rubyprof(1, action)
+    profile_with_builtin_profiler(1, action)
   end
 
-  puts "waiting for server to start up..."
-  sleep 6
-  puts "done"
+  start_server
+end
+
+def delay(sec, exit_when_complete=true)
+  Thread.abort_on_exception = true
+  Thread.new do
+    puts "waiting for #{sec} seconds..."
+    sleep sec
+    puts "done, continuing with action"
+    yield
+    exit! if exit_when_complete
+  end
+end
+
+def start_server
+  Satellite::Server.new(:production).start
 end
 
 def warm_up(n, action)
@@ -74,14 +82,6 @@ def profile_with_builtin_profiler(n, action)
   File.open("#{RESULTS_DIR}/profiler.txt", 'w') do |f|
     Profiler__::print_profile(f)
   end
-end
-
-def main
-  action = lambda { open 'http://localhost:3000/list' }
-  start_up
-  warm_up(1, action)
-  profile_with_rubyprof(1, action)
-  profile_with_builtin_profiler(1, action)
 end
 
 main

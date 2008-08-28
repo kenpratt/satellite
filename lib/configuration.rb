@@ -63,9 +63,13 @@ class Configuration
 
   def load(env)
     config_file = File.join(conf_dir, "#{env}.rb")
-    env = lambda { config = self; binding }
-    eval(IO.read(config_file), env.call)
-    self
+    if File.exists?(config_file)
+      env = lambda { config = self; binding }
+      eval(IO.read(config_file), env.call)
+      self
+    else
+      raise ArgumentError.new("Config file #{config_file} does not exist.")
+    end
   end
 
   def to_s
