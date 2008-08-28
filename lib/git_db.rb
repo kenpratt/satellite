@@ -13,6 +13,7 @@ end
 # wrapper for ruby/git bridge
 class GitDb
   inject :conf
+  inject :logger
 
   class ConfigurationError < RuntimeError; end
   class FileNotFound < RuntimeError; end
@@ -123,6 +124,7 @@ private
   # private inner class that encapsulates Git operations
   class Repo
     inject :conf
+    inject :logger
 
     # instance methods
     def initialize(git_instance)
@@ -136,7 +138,7 @@ private
         'remote.origin.url' => conf.master_repository_uri
       }.each do |k, v|
         if (old = @git.config(k)) != v
-          log.info "Updating GitDB configuration: Changing #{k} from '#{old}' to '#{v}'"
+          logger.info "Updating GitDB configuration: Changing #{k} from '#{old}' to '#{v}'"
           @git.config(k, v)
         end
       end

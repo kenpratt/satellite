@@ -37,6 +37,13 @@ describe 'Two wikis with the same master repository' do
   end
 
   it 'should be able to create a conflict' do
+    with @ctx1 do |container|
+      lambda { container.db.sync }.should.not.raise
+    end
+    with @ctx2 do |container|
+      lambda { container.db.sync }.should.not.raise
+    end
+
     # edit on wiki 1
     with @ctx1 do
       post '/page/Fizz', :input => { :content => "I am the Fizz page.\n\nOr am I?" }
