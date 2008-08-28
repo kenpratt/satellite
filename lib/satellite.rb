@@ -1,9 +1,9 @@
 # This is the main Satellite app. All business logic is contained here.
 # - configuration is in config.rb
-# - controller and view framework aka PicoFramework is in pico_framework.rb
+# - controller and view framework aka Pico is in pico.rb
 # - "database" (Git interface) aka GitDB is in git_db.rb
 
-%w{ configuration pico_framework git_db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
+%w{ configuration pico git_db rubygems metaid redcloth open-uri erubis coderay }.each {|l| require l }
 
 VALID_FILENAME_CHARS = '\w \!\@\#\$\%\^\&\(\)\-\_\+\=\[\]\{\}\,\.'
 
