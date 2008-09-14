@@ -8,7 +8,7 @@
 
 === Now (pre-1.0) (priority in brackets)
 
-* (5) better installation instructions
+* (2) beef up installation instructions more
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) satellite-wiki.com
 * (1) separate page sync and upload sync, since the latter is so much slower and less likely to cause merge issues?
@@ -16,6 +16,7 @@
 
 === Soon (maybe 1.0, maybe later)
 
+* speed up search
 * fix incoming links during page rename operations
 * remove upload/image box from current page when you delete it
 * page history view

@@ -1,18 +1,18 @@
 = Satellite
 
 Satellite is a distributed wiki client. One or more Satellite clients can
-synchronize with the same headless Satellite repository. The client(s) store
+synchronize with the same master Satellite repository. The client(s) store
 content locally and mirror with the server when a network connection is
 available. So you can edit your Satellite wiki when offline, and your changes
 will be reflected in other Satellite clients when you re-connect to the
 internet.
 
-Satellite uses "Git":http://git.or.cz/ as its storage engine, and the master
+Satellite uses Git (http://git.or.cz/) as its storage engine, and the master
 Satellite repository is nothing more then a regular Git repository. Satellite
-clients are written in "Ruby":http://www.ruby-lang.org/ and utilize the
-"Mongrel":http://mongrel.rubyforge.org/ web server, so each machine running
-a Satellite client requires Ruby and Mongrel to be installed, as well as a
-password-less method of committing to the master repository.
+clients are written in Ruby (http://www.ruby-lang.org/) and utilize the Mongrel
+(http://mongrel.rubyforge.org/) web server, so each machine running a Satellite
+client requires Ruby and Mongrel to be installed, as well as a password-less
+method of committing to the master repository.
 
 == Features
 
@@ -25,8 +25,33 @@ password-less method of committing to the master repository.
 
 == Installation
 
-TODO need to install ssh keys for passwordless git syncs
+=== Master repository setup
 
-$ sudo gem install rack mongrel metaid erubis RedCloth coderay
-$ cd path/to/satellite
-$ bin/start_satellite
+Any old git repository will function nicely as the master Satellite repository.
+
+IMPORTANT: It the master git repository and this application will not be
+running on the same computer, then you will need to set up a method of
+password-less git synchronization between the two boxes. Public & private SSH
+keys are probably the easiest way to do this. There are many articles detailing
+how to set up SSH keys. "OpenSSH key management" on IBM DeveloperWorks
+(http://www.ibm.com/developerworks/linux/library/l-keyc.html) is a good one.
+
+=== Client setup
+
+1. Get Satellite source code.
+
+2. Install required libraries
+
+ $ sudo gem install rack mongrel metaid erubis RedCloth coderay
+ $ cd path/to/satellite
+ $ git submodule init
+ $ git submodule update
+
+3. Configure application
+
+ $ cd path/to/satellite
+ edit conf/production.rb
+
+4. Start local server 
+
+ $ bin/start_satellite
