@@ -8,7 +8,6 @@
 
 === Now (pre-1.0) (priority in brackets)
 
-* (5) make a logo! (and favicon to match)
 * (5) better installation instructions
 * (2) set up deployment (rake/capistrano/vlad)
 * (1) satellite-wiki.com

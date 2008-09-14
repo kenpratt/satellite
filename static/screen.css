@@ -12,6 +12,10 @@ h1, h2, h3, h4, h5 {
   font-weight: bold;
 }
 
+body {
+  background: #fff url('sputnik-trans.gif') no-repeat bottom right;
+}
+
 #header {
   background: #600 url('dot.png') repeat;
 }
