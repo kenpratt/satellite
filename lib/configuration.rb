@@ -39,6 +39,10 @@ class Configuration
   # maximum upload file size (in MB)
   attr_accessor :max_upload_filesize
 
+  # authentication type (:basic for Basic HTTP auth, false for no authentiaction)
+  attr_accessor :authentication
+  attr_accessor :authenticator
+
   def initialize
     # defaults values
     self.app_name               = 'Satellite'
@@ -59,6 +63,8 @@ class Configuration
     self.auto_reload            = false
     self.prettify_exceptions    = true
     self.max_upload_filesize    = 200
+    self.authentication         = false
+    self.authenticator          = nil
   end
 
   def load(env)
@@ -77,8 +83,8 @@ class Configuration
       :app_name, :server_ip, :server_port, :master_repository_uri,
       :user_name, :user_email, :sync_frequency, :app_dir, :conf_dir,
       :template_dir, :static_dir, :log_dir, :data_dir, :log_level,
-      :log_file_name, :auto_reload, :prettify_exceptions, 
-      :max_upload_filesize
+      :log_file_name, :auto_reload, :prettify_exceptions,
+      :max_upload_filesize, :authentication, :authenticator
     ].collect do |c|
       sprintf "%-12s => %s", c.to_s, send(c).to_s
     end.join("\n")

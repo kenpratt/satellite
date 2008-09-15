@@ -30,7 +30,6 @@
 * list page: highlight orphaned (no incoming links) items with red backgrounds (got it working already, but is suuuper slow)
 * console that loads app + irb
 * prettier web interface for manual conflict resolution
-* user system/password protection? (but need db, cookies, etc, maybe just use httpauth or Rack::Auth)
 * multiple remote repository support (instead of master/slave)
 * tagging
 * del.icio.us integration

@@ -296,6 +296,12 @@ module Pico
       # uri mappings
       app = Rack::URLMap.new({ '/' => main }.merge(static_map))
 
+      # authentication
+      if conf.authentication == :basic
+        app = Rack::Auth::Basic.new(app, &conf.authenticator)
+        app.realm = 'Pico'
+      end
+
       # common middleware
       app = Rack::CommonLogger.new(app, logger)
       app = Rack::ShowExceptions.new(app) if conf.prettify_exceptions
