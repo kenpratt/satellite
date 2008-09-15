@@ -13,6 +13,7 @@ h1, h2, h3, h4, h5 {
 }
 
 body {
+  min-height: 320px;
   background: #fff url('sputnik-trans.gif') no-repeat bottom right;
 }
 
