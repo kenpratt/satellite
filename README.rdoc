@@ -38,7 +38,7 @@ how to set up SSH keys. "OpenSSH key management" on IBM DeveloperWorks
 
 === Client setup
 
-0. Install Git! (and Ruby)
+* Install Git! (and Ruby)
 
 * Get Satellite source code
 
