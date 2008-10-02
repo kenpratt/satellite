@@ -38,9 +38,13 @@ how to set up SSH keys. "OpenSSH key management" on IBM DeveloperWorks
 
 === Client setup
 
-1. Get Satellite source code.
+0. Install Git! (and Ruby)
 
-2. Install required libraries
+1. Get Satellite source code
+
+ $ git clone git://github.com/kenpratt/satellite.git satellite
+
+2. Install required Ruby libraries
 
  $ sudo gem install rack mongrel metaid erubis RedCloth coderay
  $ cd path/to/satellite

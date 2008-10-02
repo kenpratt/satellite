@@ -4,7 +4,10 @@
 
 === Bugs
 
-* none? (ha!)
+* the page flow is wrong when renaming (kicks you back to edit foo page when renaming to bar (from link on page))
+* css for file upload boxes is weird when they're in a list
+* make "goto" hotkey jump to lower on the page, if possible -- i can't see if the results are working
+* large file uploads seem to be crapping out
 
 === Now (pre-1.0) (priority in brackets)
 
