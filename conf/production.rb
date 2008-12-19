@@ -12,3 +12,6 @@ config.log_level = :debug
 
 # automatically reload app when app files change? (for development)
 config.auto_reload = true
+
+# wiki port
+config.server_port = 3737
