@@ -82,6 +82,8 @@ private
 
   def repo
     @repo ||= open_or_clone
+    bootstrap_if_needed
+    @repo
   end
 
   def open_or_clone
@@ -119,6 +121,15 @@ private
 
     # pull down initial content
     @repo.pull
+  end
+
+  # avoid explosions on empty repo
+  def bootstrap_if_needed
+    unless @repo.index.writable?
+      FileUtils.touch(File.join(@repo.dir.path, ".notempty"))
+      @repo.add(".notempty")
+      @repo.commit("Initial commit")
+    end
   end
 
   # private inner class that encapsulates Git operations
