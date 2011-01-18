@@ -34,7 +34,8 @@ class GitDb
   end
 
   def conflicts
-    repo.ls_unmerged_files.keys
+    # repo.ls_unmerged_files.keys
+    repo.lib.unmerged
   end
 
   def save(file, message)
@@ -245,7 +246,7 @@ private
       if @git.respond_to?(name)
         @git.send(name, *args)
       else
-        raise NameError
+        raise NameError.new("Git gem doesn't respond to #{name}(#{args.map(&:inspect).join(', ')})")
       end
     end
   end
