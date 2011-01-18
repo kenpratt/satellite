@@ -261,6 +261,7 @@ module Pico
       @dependency_container.class_eval do
         def logger
           FileUtils::mkdir_p container.conf.log_dir
+          Logger.class_eval { alias :write :"<<" } unless Logger.instance_methods.include?("write")
           l = Logger.new(File.join(container.conf.log_dir, container.conf.log_file_name))
           l.level = Logger.const_get(container.conf.log_level.to_s.upcase)
           l
