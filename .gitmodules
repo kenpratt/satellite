@@ -1,3 +1,0 @@
-[submodule "vendor/ruby-git"]
-	path = vendor/ruby-git
-	url = git://github.com/kenpratt/ruby-git.git

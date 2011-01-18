@@ -46,16 +46,13 @@ how to set up SSH keys. "OpenSSH key management" on IBM DeveloperWorks
 
 * Install required Ruby libraries
 
- $ sudo gem install rack mongrel metaid erubis RedCloth coderay
- $ cd path/to/satellite
- $ git submodule init
- $ git submodule update
+ $ sudo gem install rack mongrel metaid erubis RedCloth coderay git
 
 * Configure application
 
  $ cd path/to/satellite
  edit conf/production.rb
 
-* Start local server 
+* Start local server
 
  $ bin/start_satellite

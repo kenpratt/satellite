@@ -3,8 +3,7 @@
 
 %w{ configuration rubygems fileutils }.each {|l| require l }
 
-# use a custom ruby-git fork (not the vanilla gem)
-require File.join(File.expand_path(File.dirname(__FILE__)), '../vendor/ruby-git/lib/git.rb')
+require 'git'
 
 def quote(s)
   "'#{s}'"
