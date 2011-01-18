@@ -5,10 +5,6 @@
 
 require 'git'
 
-def quote(s)
-  "'#{s}'"
-end
-
 # wrapper for ruby/git bridge
 class GitDb
   inject :conf
@@ -39,7 +35,7 @@ class GitDb
   end
 
   def save(file, message)
-    repo.add(quote(file))
+    repo.add(file)
     repo.commit(message)
   end
 
@@ -49,7 +45,7 @@ class GitDb
   end
 
   def rm(file, message)
-    repo.remove(quote(file))
+    repo.remove(file)
     repo.commit(message)
   end
 
@@ -231,8 +227,8 @@ private
           raise e
         end
       end
-      @git.add(quote(to))
-      @git.remove(quote(from))
+      @git.add(to)
+      @git.remove(from)
     end
 
     def commit(msg)
